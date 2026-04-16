@@ -1,0 +1,130 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { Layout } from '../components/Layout';
+import { SectionTitle } from '../components/SectionTitle';
+import { StatCard } from '../components/StatCard';
+import { VisitCard } from '../components/VisitCard';
+import { useAppContext } from '../context/AppContext';
+import { colors } from '../theme';
+import type { RootStackParamList } from '../types';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'FamilyProfile'>;
+
+export function FamilyProfileScreen({ navigation, route }: Props) {
+  const { familyId } = route.params;
+  const { getFamilyById, getVisitsForFamily } = useAppContext();
+
+  const family = getFamilyById(familyId);
+  const visits = getVisitsForFamily(familyId);
+
+  if (!family) {
+    return (
+      <Layout>
+        <Text style={styles.missingText}>Familia nao encontrada.</Text>
+      </Layout>
+    );
+  }
+
+  const recentVisits = visits.slice(0, 3);
+
+  return (
+    <Layout scroll>
+      <Pressable onPress={() => navigation.goBack()}>
+        <Text style={styles.backLabel}>Voltar</Text>
+      </Pressable>
+
+      <Text style={styles.title}>{family.name}</Text>
+      <Text style={styles.subtitle}>
+        {family.cultures.join(', ')} · {family.areaHectares} ha
+      </Text>
+
+      <View style={styles.statsRow}>
+        <StatCard label="Visitas" value={visits.length} />
+        <StatCard label="Culturas" value={family.cultures.length} />
+        <StatCard label="Area" value={`${family.areaHectares} ha`} />
+      </View>
+
+      <View style={styles.actionsRow}>
+        <Pressable style={styles.primaryAction} onPress={() => navigation.navigate('VisitForm', { familyId })}>
+          <Text style={styles.primaryActionLabel}>+ Registrar visita</Text>
+        </Pressable>
+      </View>
+
+      <SectionTitle>Ultimos registros</SectionTitle>
+      {recentVisits.length > 0 ? (
+        recentVisits.map((visit) => (
+          <VisitCard
+            key={visit.id}
+            visit={visit}
+            onPress={() => navigation.navigate('VisitDetail', { visitId: visit.id })}
+          />
+        ))
+      ) : (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>Nenhum registro ainda para esta familia.</Text>
+        </View>
+      )}
+
+      <SectionTitle>Historico completo</SectionTitle>
+      {visits.map((visit) => (
+        <VisitCard
+          key={`history-${visit.id}`}
+          visit={visit}
+          onPress={() => navigation.navigate('VisitDetail', { visitId: visit.id })}
+        />
+      ))}
+    </Layout>
+  );
+}
+
+const styles = StyleSheet.create({
+  backLabel: {
+    color: colors.green,
+    fontWeight: '700',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.gray,
+    marginTop: 4,
+    marginBottom: 18,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+  actionsRow: {
+    marginBottom: 24,
+  },
+  primaryAction: {
+    backgroundColor: colors.green,
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  primaryActionLabel: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  emptyCard: {
+    backgroundColor: colors.white,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 18,
+  },
+  emptyText: {
+    color: colors.gray,
+  },
+  missingText: {
+    color: colors.text,
+    fontSize: 16,
+  },
+});
