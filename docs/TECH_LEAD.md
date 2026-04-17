@@ -314,6 +314,115 @@ Como agricultor, eu quero entrar no app com meu próprio acesso, para que eu pos
 
 ---
 
+### HU-18 — Cadastrar e gerenciar usuários do sistema
+**Perfil:** Agrônomo
+**Status:** Pendente
+
+**História:**
+Como agrônomo, eu quero cadastrar novos usuários (agentes comunitários e outros agrônomos) e gerenciar seus acessos, para que eu possa incluir quem vai usar o app sem depender do time técnico.
+
+**Critérios de aceitação:**
+- Existe uma tela de gerenciamento de usuários acessível somente pelo perfil de Agrônomo
+- O agrônomo pode cadastrar um novo Agente Comunitário informando: nome, comunidade/bairro e PIN inicial
+- O agrônomo pode desativar o acesso de um agente sem excluir seus dados históricos
+- O agrônomo pode redefinir o PIN de qualquer usuário que ele tenha cadastrado
+- Não existe auto-cadastro — todo usuário precisa ser criado por um agrônomo
+- O novo usuário é visível no app imediatamente após ser cadastrado (offline-first)
+
+**Dependência técnica:** requer que HU-16 (perfil de Agente) esteja implementada primeiro. O modelo de usuário em `types.ts` precisa suportar `role` e `createdBy` (agronomistId que cadastrou).
+
+---
+
+### HU-19 — Marcar problema como resolvido
+**Perfil:** Agrônomo, Agente Comunitário
+**Status:** Pendente
+
+**História:**
+Como agrônomo ou agente, eu quero marcar explicitamente que um problema identificado foi resolvido, para que o alerta suma da lista e o histórico registre quando e como o problema foi encerrado.
+
+**Critérios de aceitação:**
+- No perfil da família, problemas ativos têm uma ação visível para "Marcar como resolvido"
+- Ao marcar como resolvido, o sistema pede uma observação breve (opcional) sobre como foi resolvido
+- O problema some dos alertas ativos mas permanece visível no histórico com status "Resolvido" e a data de encerramento
+- A flag de "problema ativo" na lista de famílias some imediatamente após a resolução
+- A ação é salva offline e sincronizada quando houver internet
+- Apenas quem registrou o problema ou um agrônomo pode marcá-lo como resolvido
+
+**Nota:** Atualmente HU-06 menciona que "uma visita subsequente o marque como resolvido" — isso é ambíguo e cria risco de problemas nunca serem encerrados formalmente. Esta história define o comportamento explícito.
+
+---
+
+### HU-20 — Buscar família por nome
+**Perfil:** Agrônomo, Agente Comunitário
+**Status:** Pendente
+
+**História:**
+Como agrônomo ou agente, eu quero buscar uma família pelo nome, para que eu possa encontrá-la rapidamente quando a lista crescer sem precisar rolar tela abaixo.
+
+**Critérios de aceitação:**
+- Existe um campo de busca na tela de lista de famílias
+- A busca filtra em tempo real conforme o usuário digita
+- A busca é feita localmente, sem necessidade de internet
+- Sem resultado exibe mensagem clara ("Nenhuma família encontrada com esse nome")
+- Ao limpar o campo, a lista completa volta a ser exibida
+
+---
+
+### HU-21 — Editar ou excluir um registro de visita
+**Perfil:** Agrônomo, Agente Comunitário
+**Status:** Pendente
+
+**História:**
+Como agrônomo ou agente, eu quero poder editar ou excluir um registro que criei, para corrigir erros de digitação ou remover um registro feito por engano.
+
+**Critérios de aceitação:**
+- No detalhe de um registro, existe opção para editar e outra para excluir
+- Apenas o usuário que criou o registro pode editá-lo ou excluí-lo; agrônomos podem editar registros de agentes sob sua supervisão
+- A edição mantém o histórico original com log de alteração (quem editou, quando, o que mudou)
+- A exclusão pede confirmação antes de executar
+- Registros já sincronizados com o backend marcam a exclusão para sincronizar — não somem apenas localmente
+- Um registro não pode ser editado se estiver há mais de 30 dias (regra de integridade de dados — pode ser ajustada)
+
+**Dependência técnica:** o modelo de `Visit` em `types.ts` precisa incluir campos `updatedAt`, `updatedBy` e `deletedAt` (soft delete). A camada de storage em `appStorage.ts` precisa suportar esses campos.
+
+---
+
+### HU-22 — Recuperar acesso ao app (PIN esquecido ou trocado)
+**Perfil:** Todos
+**Status:** Pendente
+
+**História:**
+Como usuário que esqueceu meu PIN, eu quero ter uma forma de recuperar meu acesso sem precisar acionar o time técnico, para que eu não fique bloqueado no meio de uma visita de campo.
+
+**Critérios de aceitação:**
+- Na tela de login, existe uma opção "Esqueci meu PIN"
+- O fluxo de recuperação permite que um agrônomo redefina o PIN de qualquer usuário que ele tenha cadastrado (fluxo admin)
+- Para o próprio agrônomo, a recuperação é feita por um código de recuperação gerado no momento do cadastro (salvo offline e no backend)
+- O fluxo funciona offline para resets locais; resets que dependem do backend exigem internet
+- Após o reset, o usuário é orientado a criar um novo PIN de sua escolha
+
+**Nota:** Atualmente isso é "reset manual pelo time" — inaceitável para usuários em campo sem acesso ao time. Esta história elimina o gargalo.
+
+---
+
+### HU-23 — Exportar histórico de uma família
+**Perfil:** Agrônomo
+**Status:** Pendente
+
+**História:**
+Como agrônomo, eu quero exportar o histórico completo de uma família em formato de relatório, para que eu possa compartilhar com parceiros, ONGs ou órgãos governamentais como evidência de acompanhamento.
+
+**Critérios de aceitação:**
+- No perfil de uma família, existe opção para gerar um relatório
+- O relatório inclui: dados da família, número de visitas, registros de produção por período, problemas identificados e resolvidos, e zonas de conhecimento indicadas
+- O relatório é gerado localmente (sem precisar de internet) como arquivo compartilhável (PDF ou texto formatado)
+- O agrônomo pode definir o período do relatório (último mês, últimos 3 meses, desde o início)
+- O arquivo pode ser compartilhado via qualquer app de mensagens instalado no celular (share nativo do sistema)
+
+**Dependência técnica:** avaliar biblioteca de geração de PDF no React Native (react-native-html-to-pdf ou expo-print). Decisão de biblioteca precisa considerar suporte offline e tamanho do bundle.
+
+---
+
 ## Tabela de controle
 
 | ID | Título | Camada | Perfil | Status |
@@ -335,6 +444,12 @@ Como agricultor, eu quero entrar no app com meu próprio acesso, para que eu pos
 | HU-15 | Rastreabilidade de impacto | Conhecimento | Agrônomo | 🔲 Pendente |
 | HU-16 | Login e perfil de Agente Comunitário | Campo | Agente | 🔲 Pendente |
 | HU-17 | Login e perfil de Agricultor/Família | Campo | Agricultor | 🔲 Pendente |
+| HU-18 | Cadastrar e gerenciar usuários | Campo | Agrônomo | 🔲 Pendente |
+| HU-19 | Marcar problema como resolvido | Campo | Agrônomo, Agente | 🔲 Pendente |
+| HU-20 | Buscar família por nome | Campo | Agrônomo, Agente | 🔲 Pendente |
+| HU-21 | Editar ou excluir registro de visita | Campo | Agrônomo, Agente | 🔲 Pendente |
+| HU-22 | Recuperar acesso ao app | Campo | Todos | 🔲 Pendente |
+| HU-23 | Exportar histórico de família | Campo | Agrônomo | 🔲 Pendente |
 
 ---
 
@@ -354,6 +469,9 @@ Como agricultor, eu quero entrar no app com meu próprio acesso, para que eu pos
 
 **Sprint E:** HU-15 — painel de impacto consolidado para o agrônomo.
 
+**Melhorias Camada 1 (paralelizável com Sprints A–E):**
+HU-19 (marcar problema resolvido) e HU-20 (busca de família) são pequenas e podem entrar em qualquer sprint com capacidade disponível. HU-21 (edição de registro) requer cuidado no backend (soft delete). HU-22 (recuperação de PIN) é crítica para adoção pelos agentes — entrar antes ou junto com Sprint C. HU-23 (exportar histórico) é baixa prioridade para MVP mas importante para evidência de impacto — Sprint E ou posterior.
+
 ---
 
 ## Decisão em aberto que bloqueia HU-10 a HU-13
@@ -365,4 +483,4 @@ Prazo para essa decisão: antes do início do Sprint B.
 ---
 
 *SCALIO — Vila Jutaiteua, Pará, 2026*
-*Versão 2.0 — Atualizado para incluir a camada de zonas de conhecimento e os três perfis de usuário*
+*Versão 2.2 — Adicionadas HU-18 a HU-23: gerenciamento de usuários, resolução explícita de problemas, busca, edição de registros, recuperação de PIN e exportação de histórico*
