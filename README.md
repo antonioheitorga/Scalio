@@ -1,4 +1,7 @@
-# SCALIO
+HEAD
+# Scali
+Multiplicando conhecimento
+# SCALI
 
 SCALIO is a mobile app for recording and tracking technical field visits with farming families in Vila Jutaiteua, Para. The current codebase contains the first working Expo app foundation plus an offline-first MVP flow for agronomists.
 
@@ -133,3 +136,4 @@ What is still simplified at this stage:
 - Add automated tests for the core data flows
 - Refine the UI to match the prototype more closely where needed
 
+ bee4fd1 (Primeira versão do Scalio)
