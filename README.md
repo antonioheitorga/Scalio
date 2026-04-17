@@ -18,7 +18,11 @@ O SCALIO muda isso: cada visita vira um registro. Cada registro vira histórico.
 
 O projeto está na **Fase 1 — Construção do MVP**.
 
-A primeira versão do app já está rodando com os fluxos principais implementados. Veja a seção [O que já está implementado](#o-que-já-está-implementado) abaixo.
+A versão beta do app já está disponível para execução, com algumas funcionalidades implementadas. Consulte a seção [O que já está implementado](#o-que-já-está-implementado) abaixo para mais detalhes.
+
+---
+
+## Documentos auxiliares
 
 | Documento | Descrição |
 |---|---|
@@ -79,7 +83,7 @@ npm run web       # versão web no browser
 
 ## Acesso para testes
 
-O app inclui dois agrônomos de teste pré-cadastrados:
+O app inclui dois agrônomos genericos de teste pré-cadastrados:
 
 | Nome | PIN |
 |---|---|
@@ -142,10 +146,11 @@ O app foi construído para funcionar sem internet:
 ## Próximos passos
 
 1. Conectar sincronização a um backend real (Supabase)
-2. Implementar recuperação de acesso para os agrônomos
-3. Adicionar tratamento de conflitos para sincronização offline/online
-4. Refinar UI para alinhar com o protótipo visual
-5. Testes com os 2 agrônomos reais da Vila Jutaiteua
+2. implementar modulos de estudo para especialização dos agentes
+3. Implementar recuperação de acesso para os agrônomos
+4. Adicionar tratamento de conflitos para sincronização offline/online
+5. Refinar UI para alinhar com o protótipo visual 
+6. Testes com os 2 agrônomos reais da Vila Jutaiteua
 
 ---
 
