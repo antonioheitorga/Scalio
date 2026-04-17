@@ -1,96 +1,66 @@
-HEAD
-# Scali
-Multiplicando conhecimento
-# SCALI
+# SCALIO
 
-SCALIO is a mobile app for recording and tracking technical field visits with farming families in Vila Jutaiteua, Para. The current codebase contains the first working Expo app foundation plus an offline-first MVP flow for agronomists.
+> Conhecimento técnico que nasce da comunidade e cresce com ela.
 
-## Current Status
+SCALIO é um aplicativo mobile **offline-first** para registro e acompanhamento técnico de famílias agricultoras na Vila Jutaiteua, Pará. Ele digitaliza o trabalho dos engenheiros agrônomos em campo — sem depender de internet — e centraliza o histórico de produção, problemas identificados e orientações técnicas de cada família acompanhada.
 
-The project currently has:
+---
 
-- Product definition in [`SCALIO-historias-de-usuario.md`](c:\Users\heito\ProjetoAmazonHacking\SCALIO-historias-de-usuario.md)
-- Structural direction in [`SCALIO-plano-estrutural.md`](c:\Users\heito\ProjetoAmazonHacking\SCALIO-plano-estrutural.md)
-- A visual prototype in [`scalio-prototipo.html`](c:\Users\heito\ProjetoAmazonHacking\scalio-prototipo.html)
-- A real Expo mobile app in [`mobile`](c:\Users\heito\ProjetoAmazonHacking\mobile)
+## O problema que resolve
 
-## What Is Implemented Now
+A Vila Jutaiteua tem 411 moradores e produz açaí, mandioca, pimenta e cacau. Apenas 2 técnicos de agronomia atendem toda a comunidade — e nenhum registro das visitas é mantido. Quando o técnico não está presente, o conhecimento desaparece com ele.
 
-The app already includes these flows:
+O SCALIO muda isso: cada visita vira um registro. Cada registro vira histórico. O histórico vira dado para tomar decisões melhores.
 
-- PIN-based agronomist login with persistent local session
-- Per-user family separation
-- Family list with last visit, attention state, and active problem indication
-- Add new family flow with offline local save
-- Family profile with summary and recent records
-- Visit registration flow
-- Problem registration as part of a visit
-- Visit detail screen
-- Full visit history per family
-- Dashboard with total families, monthly records, stale visits, and active problems
-- Local storage using AsyncStorage
-- Basic sync simulation by converting pending records into synced records
+---
 
-## Tech Stack
+## Status atual
 
-- Expo
-- React Native
-- TypeScript
-- React Navigation
-- AsyncStorage for local persistence
-- `expo-network` for connection checks
+O projeto está na **Fase 1 — Construção do MVP**.
 
-Main dependencies are defined in [`mobile/package.json`](c:\Users\heito\ProjetoAmazonHacking\mobile\package.json).
+A primeira versão do app já está rodando com os fluxos principais implementados. Veja a seção [O que já está implementado](#o-que-já-está-implementado) abaixo.
 
-## Project Structure
+| Documento | Descrição |
+|---|---|
+| [Plano Estrutural](./SCALIO-plano-estrutural.md) | Fases do projeto, MVP, critérios de sucesso |
+| [Histórias de Usuário](./SCALIO-historias-de-usuario.md) | Funcionalidades com critérios de aceitação |
+| [Protótipo Visual](./scalio-prototipo.html) | Telas navegáveis — abrir no browser |
 
-```text
-ProjetoAmazonHacking/
-|- SCALIO-historias-de-usuario.md
-|- SCALIO-plano-estrutural.md
-|- scalio-prototipo.html
-|- README.md
-\- mobile/
-   |- App.tsx
-   |- app.json
-   \- src/
-      |- components/
-      |- context/
-      |- data/
-      |- hooks/
-      |- screens/
-      |- storage/
-      |- utils/
-      \- types.ts
-```
+---
 
-## Important Files
+## O que já está implementado
 
-- [`mobile/App.tsx`](c:\Users\heito\ProjetoAmazonHacking\mobile\App.tsx): app entry point and navigation setup
-- [`mobile/src/context/AppContext.tsx`](c:\Users\heito\ProjetoAmazonHacking\mobile\src\context\AppContext.tsx): core state management, login, families, visits, dashboard stats, and sync behavior
-- [`mobile/src/storage/appStorage.ts`](c:\Users\heito\ProjetoAmazonHacking\mobile\src\storage\appStorage.ts): AsyncStorage persistence layer
-- [`mobile/src/data/seed.ts`](c:\Users\heito\ProjetoAmazonHacking\mobile\src\data\seed.ts): initial seeded agronomists, families, and visits
-- [`mobile/src/screens/index.ts`](c:\Users\heito\ProjetoAmazonHacking\mobile\src\screens\index.ts): exported app screens
-- [`mobile/src/types.ts`](c:\Users\heito\ProjetoAmazonHacking\mobile\src\types.ts): main domain types
+- Login por PIN com sessão local persistente
+- Separação de dados por agrônomo (cada um vê apenas suas famílias)
+- Lista de famílias com data da última visita, indicador de atenção e alerta de problema ativo
+- Cadastro de nova família com salvamento offline
+- Perfil da família com resumo e registros recentes
+- Registro de visita de campo
+- Registro de problema como parte de uma visita
+- Tela de detalhe de um registro
+- Histórico completo de visitas por família
+- Painel com total de famílias, registros do mês, visitas atrasadas e problemas ativos
+- Armazenamento local com AsyncStorage
+- Simulação de sincronização (conversão de registros pendentes para sincronizados)
 
-## Seed Access For Testing
+---
 
-The current app includes two seeded agronomist accounts:
+## Tech stack
 
-- `Joana Silva` with PIN `1234`
-- `Marcos Pereira` with PIN `5678`
+| Camada | Tecnologia |
+|---|---|
+| App mobile | React Native + Expo |
+| Linguagem | TypeScript |
+| Navegação | React Navigation |
+| Armazenamento local | AsyncStorage |
+| Verificação de rede | expo-network |
+| Banco de dados (próxima fase) | Supabase |
 
-These live in [`mobile/src/data/seed.ts`](c:\Users\heito\ProjetoAmazonHacking\mobile\src\data\seed.ts).
+---
 
-## How To Run
+## Como rodar
 
-Requirements:
-
-- Node.js installed
-- npm installed
-- Expo-compatible emulator, simulator, or Expo Go
-
-Run the app:
+**Pré-requisitos:** Node.js e o app Expo Go instalado no celular.
 
 ```bash
 cd mobile
@@ -98,42 +68,100 @@ npm install
 npx expo start
 ```
 
-Useful commands:
+Escaneie o QR code com o Expo Go. O app abre em segundos, sem precisar de emulador.
 
 ```bash
-npm run android
-npm run ios
-npm run web
+npm run android   # emulador Android
+npm run ios       # simulador iOS (Mac apenas)
+npm run web       # versão web no browser
 ```
 
-## Offline Behavior
+---
 
-The current implementation is offline-first for local usage:
+## Acesso para testes
 
-- App state is loaded from local storage on startup
-- Changes are saved back to AsyncStorage automatically
-- Login works from locally seeded data
-- Families and visits remain available without internet
-- New visits are created with `pending` sync status
-- The dashboard includes a manual sync simulation when connectivity is available
+O app inclui dois agrônomos de teste pré-cadastrados:
 
-## Current Limitations
+| Nome | PIN |
+|---|---|
+| Joana Silva | `1234` |
+| Marcos Pereira | `5678` |
 
-What is still simplified at this stage:
+Definidos em `mobile/src/data/seed.ts`.
 
-- Authentication is local PIN-only and seeded
-- Recovery is not implemented inside the app
-- Sync is simulated locally and not connected to a backend yet
-- There is no remote database yet
-- There is no automated test suite yet
-- Data is stored on-device only for now
+---
 
-## Next Logical Steps
+## Estrutura do projeto
 
-- Connect sync to a real backend
-- Replace seeded authentication with a real user source if needed
-- Add proper conflict handling for offline/online synchronization
-- Add automated tests for the core data flows
-- Refine the UI to match the prototype more closely where needed
+```
+ProjetoAmazonHacking/
+├── README.md
+├── SCALIO-plano-estrutural.md
+├── SCALIO-historias-de-usuario.md
+├── scalio-prototipo.html
+└── mobile/
+    ├── App.tsx                         # Entrada do app e navegação
+    ├── app.json
+    └── src/
+        ├── components/                 # Componentes reutilizáveis
+        ├── context/
+        │   └── AppContext.tsx          # Estado global, login, famílias, visitas, sync
+        ├── data/
+        │   └── seed.ts                 # Dados iniciais para teste
+        ├── hooks/                      # Hooks customizados
+        ├── screens/                    # Telas do app por módulo
+        ├── storage/
+        │   └── appStorage.ts           # Camada de persistência (AsyncStorage)
+        ├── utils/
+        └── types.ts                    # Tipos do domínio
+```
 
- bee4fd1 (Primeira versão do Scalio)
+---
+
+## Comportamento offline
+
+O app foi construído para funcionar sem internet:
+
+- Estado carregado do armazenamento local ao abrir
+- Alterações salvas automaticamente no AsyncStorage
+- Login funciona com dados locais
+- Famílias e visitas disponíveis sem conexão
+- Novos registros criados com status `pending`
+- Sincronização iniciada automaticamente quando há conexão
+
+---
+
+## Limitações atuais (a resolver)
+
+- Autenticação por PIN local — sem recuperação de acesso implementada
+- Sincronização simulada localmente — ainda sem backend real conectado
+- Sem banco de dados remoto (Supabase não conectado ainda)
+- Sem testes automatizados
+
+---
+
+## Próximos passos
+
+1. Conectar sincronização a um backend real (Supabase)
+2. Implementar recuperação de acesso para os agrônomos
+3. Adicionar tratamento de conflitos para sincronização offline/online
+4. Refinar UI para alinhar com o protótipo visual
+5. Testes com os 2 agrônomos reais da Vila Jutaiteua
+
+---
+
+## Time
+
+| Nome | Papel |
+|---|---|
+| Antonio Heitor Gomes Azevedo | — |
+| Deivison Rayan Brito Tavares | — |
+| Gustavo Yuji Virgolino Nishimura | — |
+| Heitor Yasuo Yamamoto | — |
+| Pedro Henrique de Macedo Monteiro | — |
+| Pedro Unger | — |
+
+---
+
+*Projeto desenvolvido no eixo temático de Educação — Vila Jutaiteua, Pará, 2026.*
+*Alinhado aos ODS 4, 8 e 10.*
