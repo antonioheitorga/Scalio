@@ -29,7 +29,7 @@ export function AddFamilyScreen({ navigation }: Props) {
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean);
-    const parsedArea = Number(area);
+    const parsedArea = Number(area.replace(',', '.'));
 
     if (!cleanedName || cleanedCultures.length === 0 || Number.isNaN(parsedArea) || parsedArea <= 0) {
       Alert.alert('Campos obrigatorios', 'Preencha nome, culturas e area aproximada.');
