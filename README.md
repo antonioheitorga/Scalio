@@ -43,8 +43,10 @@ A versão beta do app já está disponível para execução, com algumas funcion
 - Tela de detalhe de um registro
 - Histórico completo de visitas por família
 - Painel com total de famílias, registros do mês, visitas atrasadas e problemas ativos
-- Armazenamento local com AsyncStorage
-- Simulação de sincronização (conversão de registros pendentes para sincronizados)
+- Armazenamento local com AsyncStorage (offline-first)
+- Sincronização real com Firebase Firestore
+- Autenticação anônima automática (sessão protegida)
+- Regras de segurança no Firestore validando formato dos dados
 
 ---
 
@@ -57,7 +59,8 @@ A versão beta do app já está disponível para execução, com algumas funcion
 | Navegação | React Navigation |
 | Armazenamento local | AsyncStorage |
 | Verificação de rede | expo-network |
-| Banco de dados (próxima fase) | Supabase |
+| Banco de dados | Firebase Firestore |
+| Autenticação | Firebase Anonymous Auth |
 
 ---
 
@@ -136,21 +139,19 @@ O app foi construído para funcionar sem internet:
 
 ## Limitações atuais (a resolver)
 
-- Autenticação por PIN local — sem recuperação de acesso implementada
-- Sincronização simulada localmente — ainda sem backend real conectado
-- Sem banco de dados remoto (Supabase não conectado ainda)
+- Autenticação por PIN local — sem recuperação de acesso implementada (HU-22)
+- Regras do Firestore ainda não isolam dados por agrônomo no servidor — depende de HU-16
 - Sem testes automatizados
 
 ---
 
 ## Próximos passos
 
-1. Conectar sincronização a um backend real (Supabase)
-2. implementar modulos de estudo para especialização dos agentes
-3. Implementar recuperação de acesso para os agrônomos
-4. Adicionar tratamento de conflitos para sincronização offline/online
-5. Refinar UI para alinhar com o protótipo visual 
-6. Testes com os 2 agrônomos reais da Vila Jutaiteua
+1. HU-20 — Buscar família por nome
+2. HU-10/HU-11 — Zonas de conhecimento (Camada 2)
+3. HU-16 — Perfil de Agente Comunitário + auth real por PIN no servidor
+4. HU-22 — Recuperação de acesso (PIN esquecido)
+5. Testes com os 2 agrônomos reais da Vila Jutaiteua
 
 ---
 

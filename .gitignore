@@ -1,1 +1,7 @@
 .claude/
+
+# Variáveis de ambiente (credenciais)
+.env
+.env.local
+mobile/.env
+mobile/.env.local
