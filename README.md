@@ -18,7 +18,11 @@ O SCALIO muda isso: cada visita vira um registro. Cada registro vira histórico.
 
 O projeto está na **Fase 1 — Construção do MVP**.
 
-A primeira versão do app já está rodando com os fluxos principais implementados. Veja a seção [O que já está implementado](#o-que-já-está-implementado) abaixo.
+A versão beta do app já está disponível para execução, com algumas funcionalidades implementadas. Consulte a seção [O que já está implementado](#o-que-já-está-implementado) abaixo para mais detalhes.
+
+---
+
+## Documentos auxiliares
 
 | Documento | Descrição |
 |---|---|
@@ -82,7 +86,7 @@ npm run web       # versão web no browser
 
 ## Acesso para testes
 
-O app inclui dois agrônomos de teste pré-cadastrados:
+O app inclui dois agrônomos genericos de teste pré-cadastrados:
 
 | Nome | PIN |
 |---|---|
