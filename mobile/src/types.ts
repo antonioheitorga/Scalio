@@ -35,6 +35,8 @@ export type Visit = {
   notes: string;
   problemDescription?: string;
   problemResolved?: boolean;
+  problemResolvedAt?: string;
+  problemResolutionNotes?: string;
   syncStatus: SyncStatus;
 };
 
@@ -56,6 +58,7 @@ export type RootStackParamList = {
   FamilyProfile: { familyId: string };
   VisitForm: { familyId: string };
   VisitDetail: { visitId: string };
+  ResolveProblem: { visitId: string };
   Dashboard: undefined;
 };
 

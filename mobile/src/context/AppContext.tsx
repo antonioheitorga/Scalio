@@ -44,6 +44,7 @@ type AppContextValue = {
   logout: () => void;
   addFamily: (input: AddFamilyInput) => Family | null;
   addVisit: (input: AddVisitInput) => Visit | null;
+  resolveProblem: (visitId: string, notes?: string) => boolean;
   getFamiliesForCurrentUser: () => FamilySummary[];
   getFamilyById: (familyId: string) => Family | undefined;
   getVisitsForFamily: (familyId: string) => Visit[];
@@ -301,6 +302,51 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [currentUser],
   );
 
+  const resolveProblem = useCallback(
+    (visitId: string, notes?: string) => {
+      const target = stateRef.current.visits.find((v) => v.id === visitId);
+      // Idempotente: ignora se nao existe, nao e problema, ou ja foi resolvido
+      if (!target || target.type !== 'Problema' || target.problemResolved) return false;
+
+      const trimmedNotes = notes?.trim();
+      const resolvedAt = new Date().toISOString();
+
+      // Spread condicional: campos opcionais ficam ausentes (nao undefined),
+      // o que evita erro do Firestore com `set` e undefined.
+      const updates: Partial<Visit> = {
+        problemResolved: true,
+        problemResolvedAt: resolvedAt,
+        ...(trimmedNotes ? { problemResolutionNotes: trimmedNotes } : {}),
+        syncStatus: 'pending',
+      };
+
+      setState((prev) => ({
+        ...prev,
+        visits: prev.visits.map((v) => (v.id === visitId ? { ...v, ...updates } : v)),
+      }));
+
+      void (async () => {
+        const online = await checkOnline();
+        if (!online || !isFirebaseConfigured) return;
+        try {
+          const updated: Visit = { ...target, ...updates } as Visit;
+          await pushVisits([updated]);
+          setState((prev) => ({
+            ...prev,
+            visits: prev.visits.map((v) =>
+              v.id === visitId ? { ...v, syncStatus: 'synced' } : v,
+            ),
+          }));
+        } catch {
+          // sera sincronizado no proximo ciclo
+        }
+      })();
+
+      return true;
+    },
+    [],
+  );
+
   const getVisitsForFamily = useCallback(
     (familyId: string) =>
       state.visits
@@ -388,6 +434,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       logout,
       addFamily,
       addVisit,
+      resolveProblem,
       getFamiliesForCurrentUser,
       getFamilyById,
       getVisitsForFamily,
@@ -398,6 +445,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [
       addFamily,
       addVisit,
+      resolveProblem,
       currentUser,
       getDashboardStats,
       getFamiliesForCurrentUser,

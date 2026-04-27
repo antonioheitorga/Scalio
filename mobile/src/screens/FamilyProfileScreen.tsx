@@ -1,4 +1,5 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Layout } from '../components/Layout';
@@ -7,6 +8,7 @@ import { StatCard } from '../components/StatCard';
 import { VisitCard } from '../components/VisitCard';
 import { useAppContext } from '../context/AppContext';
 import { colors } from '../theme';
+import { formatDate } from '../utils/format';
 import type { RootStackParamList } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'FamilyProfile'>;
@@ -17,6 +19,11 @@ export function FamilyProfileScreen({ navigation, route }: Props) {
 
   const family = getFamilyById(familyId);
   const visits = getVisitsForFamily(familyId);
+
+  const activeProblems = useMemo(
+    () => visits.filter((v) => v.type === 'Problema' && !v.problemResolved),
+    [visits],
+  );
 
   if (!family) {
     return (
@@ -50,6 +57,28 @@ export function FamilyProfileScreen({ navigation, route }: Props) {
           <Text style={styles.primaryActionLabel}>+ Registrar visita</Text>
         </Pressable>
       </View>
+
+      {activeProblems.length > 0 ? (
+        <>
+          <SectionTitle>Problemas ativos</SectionTitle>
+          {activeProblems.map((problem) => (
+            <View key={problem.id} style={styles.problemCard}>
+              <Text style={styles.problemDate}>{formatDate(problem.date)}</Text>
+              {problem.problemDescription ? (
+                <Text style={styles.problemText}>{problem.problemDescription}</Text>
+              ) : (
+                <Text style={styles.problemTextMuted}>Sem descricao registrada</Text>
+              )}
+              <Pressable
+                style={styles.resolveButton}
+                onPress={() => navigation.navigate('ResolveProblem', { visitId: problem.id })}
+              >
+                <Text style={styles.resolveButtonLabel}>Marcar como resolvido</Text>
+              </Pressable>
+            </View>
+          ))}
+        </>
+      ) : null}
 
       <SectionTitle>Ultimos registros</SectionTitle>
       {recentVisits.length > 0 ? (
@@ -112,6 +141,44 @@ const styles = StyleSheet.create({
   primaryActionLabel: {
     color: colors.white,
     fontSize: 16,
+    fontWeight: '700',
+  },
+  problemCard: {
+    backgroundColor: '#fbeae6',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f1c4bc',
+    gap: 8,
+  },
+  problemDate: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.red,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  problemText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  problemTextMuted: {
+    fontSize: 14,
+    color: colors.gray,
+    fontStyle: 'italic',
+  },
+  resolveButton: {
+    marginTop: 6,
+    backgroundColor: colors.green,
+    borderRadius: 14,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  resolveButtonLabel: {
+    color: colors.white,
+    fontSize: 14,
     fontWeight: '700',
   },
   emptyCard: {
