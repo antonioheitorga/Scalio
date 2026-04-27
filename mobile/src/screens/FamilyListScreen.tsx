@@ -1,15 +1,18 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FamilyListItem } from '../components/FamilyListItem';
 import { Header } from '../components/Header';
 import { Layout } from '../components/Layout';
+import { SearchInput } from '../components/SearchInput';
 import { SectionTitle } from '../components/SectionTitle';
 import { StatCard } from '../components/StatCard';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { useAppContext } from '../context/AppContext';
 import { colors } from '../theme';
 import type { RootStackParamList } from '../types';
+import { normalizeText } from '../utils/text';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'FamilyList'>;
 
@@ -18,6 +21,17 @@ export function FamilyListScreen({ navigation }: Props) {
   const syncConnected = useSyncStatus();
   const stats = getDashboardStats();
   const families = getFamiliesForCurrentUser();
+  const [query, setQuery] = useState('');
+
+  const filteredFamilies = useMemo(() => {
+    const normalizedQuery = normalizeText(query);
+    if (!normalizedQuery) return families;
+    return families.filter((family) => normalizeText(family.name).includes(normalizedQuery));
+  }, [families, query]);
+
+  const hasFamilies = families.length > 0;
+  const hasResults = filteredFamilies.length > 0;
+  const isSearching = query.trim().length > 0;
 
   return (
     <Layout scroll>
@@ -49,13 +63,33 @@ export function FamilyListScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
-      {families.map((family) => (
-        <FamilyListItem
-          key={family.id}
-          family={family}
-          onPress={() => navigation.navigate('FamilyProfile', { familyId: family.id })}
-        />
-      ))}
+      {hasFamilies ? (
+        <View style={styles.searchWrap}>
+          <SearchInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Buscar familia por nome"
+          />
+        </View>
+      ) : null}
+
+      {hasResults ? (
+        filteredFamilies.map((family) => (
+          <FamilyListItem
+            key={family.id}
+            family={family}
+            onPress={() => navigation.navigate('FamilyProfile', { familyId: family.id })}
+          />
+        ))
+      ) : (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>
+            {isSearching
+              ? 'Nenhuma familia encontrada para essa busca.'
+              : 'Nenhuma familia cadastrada ainda.'}
+          </Text>
+        </View>
+      )}
 
       <Pressable style={styles.addButton} onPress={() => navigation.navigate('AddFamily')}>
         <Text style={styles.addButtonLabel}>+ Adicionar nova familia</Text>
@@ -77,9 +111,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  searchWrap: {
+    marginBottom: 12,
+  },
   link: {
     color: colors.green,
     fontWeight: '700',
+  },
+  emptyCard: {
+    backgroundColor: colors.white,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 12,
+  },
+  emptyText: {
+    color: colors.gray,
   },
   addButton: {
     marginTop: 8,
