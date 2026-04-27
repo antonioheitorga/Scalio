@@ -2,6 +2,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Layout } from '../components/Layout';
+import { StatusPill } from '../components/StatusPill';
 import { useAppContext } from '../context/AppContext';
 import { colors } from '../theme';
 import { formatCurrency, formatDate, formatQuantity } from '../utils/format';
@@ -22,6 +23,10 @@ export function VisitDetailScreen({ navigation, route }: Props) {
     );
   }
 
+  const isProblem = visit.type === 'Problema';
+  const isResolved = isProblem && visit.problemResolved === true;
+  const isActiveProblem = isProblem && !visit.problemResolved;
+
   return (
     <Layout>
       <Pressable onPress={() => navigation.goBack()}>
@@ -29,8 +34,18 @@ export function VisitDetailScreen({ navigation, route }: Props) {
       </Pressable>
 
       <View style={styles.card}>
-        <Text style={styles.title}>{visit.type}</Text>
-        <Text style={styles.date}>{formatDate(visit.date)}</Text>
+        <View style={styles.headerRow}>
+          <View style={styles.flex}>
+            <Text style={styles.title}>{visit.type}</Text>
+            <Text style={styles.date}>{formatDate(visit.date)}</Text>
+          </View>
+          {isProblem ? (
+            <StatusPill
+              label={isResolved ? 'Resolvido' : 'Ativo'}
+              tone={isResolved ? 'ok' : 'alert'}
+            />
+          ) : null}
+        </View>
 
         <Text style={styles.row}>Cultura: {visit.culture}</Text>
         <Text style={styles.row}>Quantidade: {formatQuantity(visit.quantity)}</Text>
@@ -41,8 +56,29 @@ export function VisitDetailScreen({ navigation, route }: Props) {
           <Text style={styles.problem}>Problema: {visit.problemDescription}</Text>
         ) : null}
 
+        {isResolved ? (
+          <View style={styles.resolutionBlock}>
+            <Text style={styles.resolutionLabel}>Resolvido</Text>
+            {visit.problemResolvedAt ? (
+              <Text style={styles.resolutionDate}>em {formatDate(visit.problemResolvedAt)}</Text>
+            ) : null}
+            {visit.problemResolutionNotes ? (
+              <Text style={styles.resolutionNotes}>{visit.problemResolutionNotes}</Text>
+            ) : null}
+          </View>
+        ) : null}
+
         <Text style={styles.notes}>{visit.notes}</Text>
       </View>
+
+      {isActiveProblem ? (
+        <Pressable
+          style={styles.primaryButton}
+          onPress={() => navigation.navigate('ResolveProblem', { visitId: visit.id })}
+        >
+          <Text style={styles.primaryButtonLabel}>Marcar como resolvido</Text>
+        </Pressable>
+      ) : null}
     </Layout>
   );
 }
@@ -59,6 +95,14 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 10,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  flex: {
+    flex: 1,
+  },
   title: {
     fontSize: 28,
     fontWeight: '800',
@@ -66,7 +110,7 @@ const styles = StyleSheet.create({
   },
   date: {
     color: colors.gray,
-    marginBottom: 8,
+    marginTop: 4,
   },
   row: {
     color: colors.text,
@@ -76,10 +120,45 @@ const styles = StyleSheet.create({
     color: colors.red,
     fontWeight: '700',
   },
+  resolutionBlock: {
+    marginTop: 4,
+    backgroundColor: '#dcefd8',
+    borderRadius: 14,
+    padding: 12,
+    gap: 4,
+  },
+  resolutionLabel: {
+    color: '#275a20',
+    fontWeight: '700',
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  resolutionDate: {
+    color: '#275a20',
+    fontSize: 13,
+  },
+  resolutionNotes: {
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 20,
+  },
   notes: {
     marginTop: 6,
     color: colors.gray,
     lineHeight: 20,
+  },
+  primaryButton: {
+    marginTop: 16,
+    backgroundColor: colors.green,
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+  primaryButtonLabel: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '700',
   },
   missingText: {
     color: colors.text,

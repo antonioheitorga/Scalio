@@ -35,6 +35,8 @@ service cloud.firestore {
     match /visits/{visitId} {
       allow read: if request.auth != null;
 
+      // Campos opcionais sao validados apenas quando presentes — visitas
+      // antigas sem esses campos continuam sendo aceitas.
       allow create, update: if request.auth != null
         && request.resource.data.id is string
         && request.resource.data.familyId is string
@@ -42,7 +44,10 @@ service cloud.firestore {
         && request.resource.data.date is string
         && request.resource.data.type in ['Producao', 'Venda', 'Insumo', 'Problema', 'OrientacaoTecnica']
         && request.resource.data.culture is string
-        && request.resource.data.notes is string;
+        && request.resource.data.notes is string
+        && (!('problemResolved' in request.resource.data) || request.resource.data.problemResolved is bool)
+        && (!('problemResolvedAt' in request.resource.data) || request.resource.data.problemResolvedAt is string)
+        && (!('problemResolutionNotes' in request.resource.data) || request.resource.data.problemResolutionNotes is string);
 
       allow delete: if false;
     }

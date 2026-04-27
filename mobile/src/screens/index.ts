@@ -3,5 +3,6 @@ export { DashboardScreen } from './DashboardScreen';
 export { FamilyListScreen } from './FamilyListScreen';
 export { FamilyProfileScreen } from './FamilyProfileScreen';
 export { LoginScreen } from './LoginScreen';
+export { ResolveProblemScreen } from './ResolveProblemScreen';
 export { VisitDetailScreen } from './VisitDetailScreen';
 export { VisitFormScreen } from './VisitFormScreen';
