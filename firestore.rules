@@ -52,7 +52,12 @@ service cloud.firestore {
         && request.resource.data.notes is string
         && (!('problemResolved' in request.resource.data) || request.resource.data.problemResolved is bool)
         && (!('problemResolvedAt' in request.resource.data) || request.resource.data.problemResolvedAt is string)
-        && (!('problemResolutionNotes' in request.resource.data) || request.resource.data.problemResolutionNotes is string);
+        && (!('problemResolutionNotes' in request.resource.data) || request.resource.data.problemResolutionNotes is string)
+        // Auditoria HU-21 — opcionais, validados quando presentes:
+        && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is string)
+        && (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string)
+        && (!('deletedAt' in request.resource.data) || request.resource.data.deletedAt is string);
+        // TODO HU-21+ : validar a janela de 30 dias no servidor quando vier multi-role.
 
       allow delete: if false;
     }

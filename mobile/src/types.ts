@@ -37,6 +37,11 @@ export type Visit = {
   problemResolved?: boolean;
   problemResolvedAt?: string;
   problemResolutionNotes?: string;
+  // Campos de auditoria (HU-21):
+  // updatedAt: ultima edicao | updatedBy: agente que editou | deletedAt: soft delete
+  updatedAt?: string;
+  updatedBy?: string;
+  deletedAt?: string;
   syncStatus: SyncStatus;
 };
 
@@ -56,7 +61,7 @@ export type RootStackParamList = {
   FamilyList: undefined;
   AddFamily: undefined;
   FamilyProfile: { familyId: string };
-  VisitForm: { familyId: string };
+  VisitForm: { familyId: string; visitId?: string };
   VisitDetail: { visitId: string };
   ResolveProblem: { visitId: string };
   Dashboard: undefined;
