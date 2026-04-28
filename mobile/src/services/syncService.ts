@@ -26,16 +26,42 @@ export async function pushVisits(visits: Visit[]): Promise<void> {
   await batch.commit();
 }
 
-export async function fetchFamilies(agronomistId: string): Promise<Family[]> {
-  const snap = await getDocs(
-    query(collection(db, FAMILIES), where('agronomistId', '==', agronomistId)),
-  );
-  return snap.docs.map((d) => d.data() as Family);
+// Helper: remove o campo legado 'agronomistId' e garante 'agentId'
+// Retro-compatibilidade com documentos criados antes do refator.
+function normalizeAgentField<T>(data: Record<string, unknown>): T {
+  const { agronomistId, ...rest } = data;
+  return {
+    ...rest,
+    agentId: (data.agentId as string | undefined) ?? (agronomistId as string | undefined),
+  } as T;
 }
 
-export async function fetchVisits(agronomistId: string): Promise<Visit[]> {
-  const snap = await getDocs(
-    query(collection(db, VISITS), where('agronomistId', '==', agronomistId)),
-  );
-  return snap.docs.map((d) => ({ ...d.data(), syncStatus: 'synced' as const }) as Visit);
+export async function fetchFamilies(agentId: string): Promise<Family[]> {
+  // Dupla query: doc novo (agentId) + doc legado (agronomistId).
+  // Mantém docs antigos visíveis até serem atualizados pelo app, quando
+  // o set substitui pelo formato novo.
+  const [snapNew, snapOld] = await Promise.all([
+    getDocs(query(collection(db, FAMILIES), where('agentId', '==', agentId))),
+    getDocs(query(collection(db, FAMILIES), where('agronomistId', '==', agentId))),
+  ]);
+
+  const merged = new Map<string, Family>();
+  [...snapNew.docs, ...snapOld.docs].forEach((d) => {
+    merged.set(d.id, normalizeAgentField<Family>(d.data()));
+  });
+  return Array.from(merged.values());
+}
+
+export async function fetchVisits(agentId: string): Promise<Visit[]> {
+  const [snapNew, snapOld] = await Promise.all([
+    getDocs(query(collection(db, VISITS), where('agentId', '==', agentId))),
+    getDocs(query(collection(db, VISITS), where('agronomistId', '==', agentId))),
+  ]);
+
+  const merged = new Map<string, Visit>();
+  [...snapNew.docs, ...snapOld.docs].forEach((d) => {
+    const normalized = normalizeAgentField<Omit<Visit, 'syncStatus'>>(d.data());
+    merged.set(d.id, { ...normalized, syncStatus: 'synced' } as Visit);
+  });
+  return Array.from(merged.values());
 }

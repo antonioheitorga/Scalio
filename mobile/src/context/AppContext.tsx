@@ -37,7 +37,7 @@ type DashboardStats = {
 
 type AppContextValue = {
   state: AppState;
-  currentUser: AppState['agronomists'][number] | null;
+  currentUser: AppState['agents'][number] | null;
   isHydrated: boolean;
   isSyncing: boolean;
   login: (pin: string) => boolean;
@@ -57,7 +57,7 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 function getCurrentUserFromSession(state: AppState, session: Session | null) {
   if (!session) return null;
-  return state.agronomists.find((item) => item.id === session.agronomistId) ?? null;
+  return state.agents.find((item) => item.id === session.agentId) ?? null;
 }
 
 async function checkOnline(): Promise<boolean> {
@@ -115,15 +115,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const currentUser = useMemo(() => getCurrentUserFromSession(state, state.session), [state]);
 
   // Sync bidirecional: puxa remoto, mescla com local, empurra pendentes
-  const syncForAgronomist = useCallback(async (agronomistId: string) => {
+  const syncForAgent = useCallback(async (agentId: string) => {
     if (!isFirebaseConfigured) return;
 
     setIsSyncing(true);
 
     try {
       const [remoteFamilies, remoteVisits] = await Promise.all([
-        fetchFamilies(agronomistId),
-        fetchVisits(agronomistId),
+        fetchFamilies(agentId),
+        fetchVisits(agentId),
       ]);
 
       // Mescla: itens remotos que não existem localmente são adicionados
@@ -146,9 +146,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       // Empurra dados locais para o Firestore
       const current = stateRef.current;
-      const localFamilies = current.families.filter((f) => f.agronomistId === agronomistId);
+      const localFamilies = current.families.filter((f) => f.agentId === agentId);
       const pendingVisits = current.visits.filter(
-        (v) => v.agronomistId === agronomistId && v.syncStatus === 'pending',
+        (v) => v.agentId === agentId && v.syncStatus === 'pending',
       );
 
       await Promise.all([
@@ -182,7 +182,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const online = await checkOnline();
       if (online && mounted) {
         try {
-          await syncForAgronomist(currentUser!.id);
+          await syncForAgent(currentUser!.id);
         } catch {
           // falha silenciosa — app funciona offline
         }
@@ -196,21 +196,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       clearInterval(interval);
     };
-  }, [currentUser, isHydrated, isAuthReady, syncForAgronomist]);
+  }, [currentUser, isHydrated, isAuthReady, syncForAgent]);
 
   const login = useCallback(
     (pin: string) => {
-      const user = state.agronomists.find((item) => item.pin === pin);
+      const user = state.agents.find((item) => item.pin === pin);
       if (!user) return false;
 
-      setState((prev) => ({ ...prev, session: { agronomistId: user.id } }));
+      setState((prev) => ({ ...prev, session: { agentId: user.id } }));
 
       // Sync imediato ao fazer login (se online)
       void (async () => {
         const online = await checkOnline();
         if (online) {
           try {
-            await syncForAgronomist(user.id);
+            await syncForAgent(user.id);
           } catch {
             // silencioso
           }
@@ -219,7 +219,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       return true;
     },
-    [state.agronomists, syncForAgronomist],
+    [state.agents, syncForAgent],
   );
 
   const logout = useCallback(() => {
@@ -232,7 +232,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const family: Family = {
         id: makeId('family'),
-        agronomistId: currentUser.id,
+        agentId: currentUser.id,
         name: input.name,
         cultures: input.cultures,
         areaHectares: input.areaHectares,
@@ -264,7 +264,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const visit: Visit = {
         id: makeId('visit'),
-        agronomistId: currentUser.id,
+        agentId: currentUser.id,
         familyId: input.familyId,
         date: input.date,
         type: input.type,
@@ -369,7 +369,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser) return [];
 
     return state.families
-      .filter((family) => family.agronomistId === currentUser.id)
+      .filter((family) => family.agentId === currentUser.id)
       .map((family) => {
         const visits = getVisitsForFamily(family.id);
         const lastVisit = visits[0] ?? null;
@@ -417,12 +417,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const online = await checkOnline();
       if (!online) return;
       try {
-        await syncForAgronomist(currentUser.id);
+        await syncForAgent(currentUser.id);
       } catch {
         // silencioso
       }
     })();
-  }, [currentUser, syncForAgronomist]);
+  }, [currentUser, syncForAgent]);
 
   const value = useMemo<AppContextValue>(
     () => ({
