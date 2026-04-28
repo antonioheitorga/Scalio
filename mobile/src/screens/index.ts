@@ -2,6 +2,7 @@ export { AddFamilyScreen } from './AddFamilyScreen';
 export { DashboardScreen } from './DashboardScreen';
 export { FamilyListScreen } from './FamilyListScreen';
 export { FamilyProfileScreen } from './FamilyProfileScreen';
+export { ForgotPinScreen } from './ForgotPinScreen';
 export { LoginScreen } from './LoginScreen';
 export { ResolveProblemScreen } from './ResolveProblemScreen';
 export { VisitDetailScreen } from './VisitDetailScreen';

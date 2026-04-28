@@ -7,12 +7,14 @@ export const initialState: AppState = {
       name: 'Joana Silva',
       pin: '1234',
       initials: 'JS',
+      recoveryCode: 'JOANA-7421',
     },
     {
       id: 'agent-marcos',
       name: 'Marcos Pereira',
       pin: '5678',
       initials: 'MP',
+      recoveryCode: 'MARCOS-3158',
     },
   ],
   families: [
