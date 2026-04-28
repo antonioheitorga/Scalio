@@ -17,7 +17,7 @@ export function DashboardScreen({ navigation }: { navigation: { goBack: () => vo
     <Layout>
       <Header
         title="Painel SCALIO"
-        subtitle="Resumo rapido das atividades acompanhadas pelo agronomo."
+        subtitle="Resumo rapido das atividades acompanhadas pelo agente."
       />
 
       <View style={styles.grid}>

@@ -8,9 +8,14 @@ rules_version = '2';
 //
 // Limitações conhecidas (a endurecer em HU-16/18):
 //   - Qualquer sessão autenticada (anônima ou não) pode ler/escrever em qualquer
-//     família ou visita. Ainda não há autorização por agrônomo no servidor, porque
-//     o PIN é local e não existe relação entre o UID do Firebase e o agrônomo.
+//     família ou visita. Ainda não há autorização por agente no servidor, porque
+//     o PIN é local e não existe relação entre o UID do Firebase e o agente.
 //   - Delete bloqueado — o MVP não tem esse fluxo. HU-21 vai trazer soft delete.
+//
+// Migração agronomistId → agentId:
+//   Writes do app sempre usam 'agentId'. Documentos antigos no banco (com
+//   'agronomistId') continuam legíveis via dual query no cliente, e são
+//   atualizados ao formato novo na próxima escrita pelo app.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -20,7 +25,7 @@ service cloud.firestore {
 
       allow create, update: if request.auth != null
         && request.resource.data.id is string
-        && request.resource.data.agronomistId is string
+        && request.resource.data.agentId is string
         && request.resource.data.name is string
         && request.resource.data.name.size() > 0
         && request.resource.data.areaHectares is number
@@ -40,7 +45,7 @@ service cloud.firestore {
       allow create, update: if request.auth != null
         && request.resource.data.id is string
         && request.resource.data.familyId is string
-        && request.resource.data.agronomistId is string
+        && request.resource.data.agentId is string
         && request.resource.data.date is string
         && request.resource.data.type in ['Producao', 'Venda', 'Insumo', 'Problema', 'OrientacaoTecnica']
         && request.resource.data.culture is string

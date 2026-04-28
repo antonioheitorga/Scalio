@@ -1,4 +1,4 @@
-export type Agronomist = {
+export type Agent = {
   id: string;
   name: string;
   pin: string;
@@ -16,7 +16,7 @@ export type SyncStatus = 'synced' | 'pending';
 
 export type Family = {
   id: string;
-  agronomistId: string;
+  agentId: string;
   name: string;
   cultures: string[];
   areaHectares: number;
@@ -26,7 +26,7 @@ export type Family = {
 export type Visit = {
   id: string;
   familyId: string;
-  agronomistId: string;
+  agentId: string;
   date: string;
   type: VisitType;
   culture: string;
@@ -41,11 +41,11 @@ export type Visit = {
 };
 
 export type Session = {
-  agronomistId: string;
+  agentId: string;
 };
 
 export type AppState = {
-  agronomists: Agronomist[];
+  agents: Agent[];
   families: Family[];
   visits: Visit[];
   session: Session | null;
