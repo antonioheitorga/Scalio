@@ -147,14 +147,3 @@ O UID anônimo não tem relação com o PIN do agente. Qualquer sessão autentic
 
 **Firestore:** novas coleções `zones`, `topics`, `reports` quando implementar.
 
-## Débitos técnicos documentados
-
-**PIN por SMS (HU-22 futura):**
-O fluxo atual usa código fixo no seed. Quando houver backend real:
-- Remover picker de agente — tela individual por usuário
-- Código enviado por SMS/WhatsApp no momento da solicitação
-- Atender também o familiar (HU-17+)
-- Pré-requisito: HU-16 (auth server-side) ou decisão de infra de SMS
-
-**Regra de 30 dias no servidor (HU-21+):**
-Hoje só validada no cliente. Quando vier multi-role (HU-16), endurecer no Firestore Rules.
