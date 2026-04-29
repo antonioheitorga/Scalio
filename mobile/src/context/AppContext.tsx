@@ -47,6 +47,7 @@ type AppContextValue = {
   resolveProblem: (visitId: string, notes?: string) => boolean;
   updateVisit: (visitId: string, fields: Partial<AddVisitInput>) => boolean;
   deleteVisit: (visitId: string) => boolean;
+  resetPinWithRecoveryCode: (agentId: string, code: string, newPin: string) => boolean;
   getFamiliesForCurrentUser: () => FamilySummary[];
   getFamilyById: (familyId: string) => Family | undefined;
   getVisitsForFamily: (familyId: string) => Visit[];
@@ -245,6 +246,33 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     setState((prev) => ({ ...prev, session: null }));
   }, []);
+
+  // Redefine o PIN do agente quando ele apresenta o codigo de recuperacao.
+  // Idempotente: chamada repetida com mesmos parametros apenas re-aplica
+  // o PIN. Sem push para o Firestore — agentes vivem no seed local.
+  const resetPinWithRecoveryCode = useCallback(
+    (agentId: string, code: string, newPin: string) => {
+      const trimmedCode = code.trim();
+      const trimmedPin = newPin.trim();
+
+      // PIN deve ser exatamente 4 digitos numericos
+      if (!/^\d{4}$/.test(trimmedPin)) return false;
+
+      const target = stateRef.current.agents.find((a) => a.id === agentId);
+      if (!target) return false;
+      if (!target.recoveryCode || target.recoveryCode !== trimmedCode) return false;
+
+      setState((prev) => ({
+        ...prev,
+        agents: prev.agents.map((a) =>
+          a.id === agentId ? { ...a, pin: trimmedPin } : a,
+        ),
+      }));
+
+      return true;
+    },
+    [],
+  );
 
   const addFamily = useCallback(
     (input: AddFamilyInput) => {
@@ -559,6 +587,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       resolveProblem,
       updateVisit,
       deleteVisit,
+      resetPinWithRecoveryCode,
       getFamiliesForCurrentUser,
       getFamilyById,
       getVisitsForFamily,
@@ -572,6 +601,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       resolveProblem,
       updateVisit,
       deleteVisit,
+      resetPinWithRecoveryCode,
       currentUser,
       getDashboardStats,
       getFamiliesForCurrentUser,

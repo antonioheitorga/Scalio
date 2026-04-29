@@ -3,6 +3,10 @@ export type Agent = {
   name: string;
   pin: string;
   initials: string;
+  // Codigo de recuperacao gerado uma vez no cadastro do agente.
+  // Texto-claro e aceitavel no MVP (seed local). Endurecer em HU-16
+  // quando agentes forem persistidos no Firestore.
+  recoveryCode?: string;
 };
 
 export type VisitType =
@@ -58,6 +62,7 @@ export type AppState = {
 
 export type RootStackParamList = {
   Login: undefined;
+  ForgotPin: undefined;
   FamilyList: undefined;
   AddFamily: undefined;
   FamilyProfile: { familyId: string };

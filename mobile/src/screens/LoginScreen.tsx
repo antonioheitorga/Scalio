@@ -1,3 +1,4 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import {
   Alert,
@@ -11,8 +12,11 @@ import {
 import { useAppContext } from '../context/AppContext';
 import { colors } from '../theme';
 import { Layout } from '../components/Layout';
+import type { RootStackParamList } from '../types';
 
-export function LoginScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
+export function LoginScreen({ navigation }: Props) {
   const { state, login } = useAppContext();
   const [pin, setPin] = useState('');
 
@@ -55,6 +59,10 @@ export function LoginScreen() {
           <Text style={styles.primaryButtonLabel}>Entrar</Text>
         </Pressable>
 
+        <Pressable onPress={() => navigation.navigate('ForgotPin')} hitSlop={8}>
+          <Text style={styles.forgotLink}>Esqueci meu PIN</Text>
+        </Pressable>
+
         <View style={styles.demoBox}>
           <Text style={styles.demoTitle}>Acessos de teste</Text>
           {state.agents.map((user) => (
@@ -62,9 +70,6 @@ export function LoginScreen() {
               {user.name} · PIN {user.pin}
             </Text>
           ))}
-          <Text style={styles.recovery}>
-            Recuperacao MVP: reset manual pelo time fora do app.
-          </Text>
         </View>
       </View>
     </Layout>
@@ -139,9 +144,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text,
   },
-  recovery: {
-    marginTop: 8,
-    fontSize: 12,
-    color: colors.gray,
+  forgotLink: {
+    marginTop: 6,
+    color: colors.green,
+    fontWeight: '600',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
