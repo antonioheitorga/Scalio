@@ -71,7 +71,14 @@ Ao tomar uma decisão pensando em escalabilidade futura, mencionar explicitament
 - Regras de acesso (ex: Firestore Rules, policies) sempre revisadas antes de publicar.
 - Qualquer mudança de permissão ou segurança exige autorização explícita do usuário.
 
-## 8. Comunicação
+## 8. Git — permissões
+
+- **Commit e push:** Claude executa livremente após autorização do usuário na sessão.
+- **PR e merge final:** sempre responsabilidade do usuário — Claude não abre nem mergea PRs.
+- Nunca dar push em `main` diretamente.
+- Nunca forçar push (`--force`) sem instrução explícita.
+
+## 9. Comunicação
 
 - Ao final de cada sprint: resumo por arquivo com decisão + justificativa.
 - Se identificar débito técnico: documentar e apresentar ao usuário, não resolver silenciosamente.
