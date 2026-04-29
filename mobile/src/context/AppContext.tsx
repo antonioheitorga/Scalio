@@ -45,6 +45,8 @@ type AppContextValue = {
   addFamily: (input: AddFamilyInput) => Family | null;
   addVisit: (input: AddVisitInput) => Visit | null;
   resolveProblem: (visitId: string, notes?: string) => boolean;
+  updateVisit: (visitId: string, fields: Partial<AddVisitInput>) => boolean;
+  deleteVisit: (visitId: string) => boolean;
   resetPinWithRecoveryCode: (agentId: string, code: string, newPin: string) => boolean;
   getFamiliesForCurrentUser: () => FamilySummary[];
   getFamilyById: (familyId: string) => Family | undefined;
@@ -64,6 +66,24 @@ function getCurrentUserFromSession(state: AppState, session: Session | null) {
 async function checkOnline(): Promise<boolean> {
   const net = await Network.getNetworkStateAsync();
   return Boolean(net.isConnected && net.isInternetReachable !== false);
+}
+
+// Janela de edicao/exclusao em dias. Apos esse periodo a visita
+// vira historico imutavel (HU-21).
+const EDIT_WINDOW_DAYS = 30;
+
+// Filtro DRY de visibilidade. Soft delete: visitas com deletedAt
+// existem no estado e no Firestore, mas nao aparecem em nenhuma UI
+// nem entram nas estatisticas.
+function isVisitVisible(visit: Visit): boolean {
+  return !visit.deletedAt;
+}
+
+export function isVisitWithinEditWindow(visit: Visit): boolean {
+  const visitTime = new Date(visit.date).getTime();
+  if (Number.isNaN(visitTime)) return false;
+  const ageMs = Date.now() - visitTime;
+  return ageMs <= EDIT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -375,10 +395,108 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  // Edicao de visita. Idempotente: visita inexistente, soft-deletada ou
+  // fora da janela de 30 dias retorna false sem efeito colateral.
+  // updatedBy registra o agente atual no momento da edicao.
+  const updateVisit = useCallback(
+    (visitId: string, fields: Partial<AddVisitInput>) => {
+      if (!currentUser) return false;
+      const target = stateRef.current.visits.find((v) => v.id === visitId);
+      if (!target || target.deletedAt || !isVisitWithinEditWindow(target)) return false;
+
+      // Mantem somente campos definidos para evitar 'undefined' no Firestore
+      const sanitized: Partial<Visit> = {};
+      if (fields.date !== undefined) sanitized.date = fields.date;
+      if (fields.type !== undefined) sanitized.type = fields.type;
+      if (fields.culture !== undefined) sanitized.culture = fields.culture;
+      if (fields.notes !== undefined) sanitized.notes = fields.notes;
+      if (fields.quantity !== undefined) sanitized.quantity = fields.quantity;
+      if (fields.value !== undefined) sanitized.value = fields.value;
+      if (fields.problemDescription !== undefined) {
+        sanitized.problemDescription = fields.problemDescription;
+      }
+      if (fields.problemResolved !== undefined) {
+        sanitized.problemResolved = fields.problemResolved;
+      }
+
+      const updates: Partial<Visit> = {
+        ...sanitized,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.id,
+        syncStatus: 'pending',
+      };
+
+      setState((prev) => ({
+        ...prev,
+        visits: prev.visits.map((v) => (v.id === visitId ? { ...v, ...updates } : v)),
+      }));
+
+      void (async () => {
+        const online = await checkOnline();
+        if (!online || !isFirebaseConfigured) return;
+        try {
+          const updated: Visit = { ...target, ...updates } as Visit;
+          await pushVisits([updated]);
+          setState((prev) => ({
+            ...prev,
+            visits: prev.visits.map((v) =>
+              v.id === visitId ? { ...v, syncStatus: 'synced' } : v,
+            ),
+          }));
+        } catch {
+          // sera sincronizado no proximo ciclo
+        }
+      })();
+
+      return true;
+    },
+    [currentUser],
+  );
+
+  // Soft delete: marca deletedAt e mantem o documento. Mesmas validacoes
+  // de janela de 30 dias e idempotencia. Visita some de toda UI via
+  // filtro isVisitVisible nos getters.
+  const deleteVisit = useCallback(
+    (visitId: string) => {
+      const target = stateRef.current.visits.find((v) => v.id === visitId);
+      if (!target || target.deletedAt || !isVisitWithinEditWindow(target)) return false;
+
+      const updates: Partial<Visit> = {
+        deletedAt: new Date().toISOString(),
+        syncStatus: 'pending',
+      };
+
+      setState((prev) => ({
+        ...prev,
+        visits: prev.visits.map((v) => (v.id === visitId ? { ...v, ...updates } : v)),
+      }));
+
+      void (async () => {
+        const online = await checkOnline();
+        if (!online || !isFirebaseConfigured) return;
+        try {
+          const updated: Visit = { ...target, ...updates } as Visit;
+          await pushVisits([updated]);
+          setState((prev) => ({
+            ...prev,
+            visits: prev.visits.map((v) =>
+              v.id === visitId ? { ...v, syncStatus: 'synced' } : v,
+            ),
+          }));
+        } catch {
+          // sera sincronizado no proximo ciclo
+        }
+      })();
+
+      return true;
+    },
+    [],
+  );
+
   const getVisitsForFamily = useCallback(
     (familyId: string) =>
       state.visits
-        .filter((visit) => visit.familyId === familyId)
+        .filter((visit) => visit.familyId === familyId && isVisitVisible(visit))
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [state.visits],
   );
@@ -388,6 +506,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [state.families],
   );
 
+  // getVisitById nao aplica isVisitVisible: VisitDetailScreen pode
+  // legitimamente abrir uma visita por ID. UIs que listam ja filtram
+  // via getVisitsForFamily. Ainda assim, se a visita tiver deletedAt,
+  // a tela deve renderizar como "registro removido".
   const getVisitById = useCallback(
     (visitId: string) => state.visits.find((v) => v.id === visitId),
     [state.visits],
@@ -463,6 +585,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addFamily,
       addVisit,
       resolveProblem,
+      updateVisit,
+      deleteVisit,
       resetPinWithRecoveryCode,
       getFamiliesForCurrentUser,
       getFamilyById,
@@ -475,6 +599,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addFamily,
       addVisit,
       resolveProblem,
+      updateVisit,
+      deleteVisit,
       resetPinWithRecoveryCode,
       currentUser,
       getDashboardStats,

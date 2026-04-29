@@ -20,19 +20,31 @@ type Props = NativeStackScreenProps<RootStackParamList, 'VisitForm'>;
 const visitTypes: VisitType[] = ['Producao', 'Venda', 'Insumo', 'Problema', 'OrientacaoTecnica'];
 
 export function VisitFormScreen({ navigation, route }: Props) {
-  const { familyId } = route.params;
-  const { addVisit, getFamilyById } = useAppContext();
+  const { familyId, visitId } = route.params;
+  const { addVisit, updateVisit, getFamilyById, getVisitById } = useAppContext();
   const family = getFamilyById(familyId);
+  const editing = visitId ? getVisitById(visitId) : undefined;
+  const isEditMode = Boolean(editing);
 
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const [date, setDate] = useState(today);
-  const [type, setType] = useState<VisitType>('Producao');
-  const [culture, setCulture] = useState(family?.cultures[0] ?? '');
-  const [quantity, setQuantity] = useState('');
-  const [value, setValue] = useState('');
-  const [notes, setNotes] = useState('');
-  const [problemDescription, setProblemDescription] = useState('');
-  const [problemResolved, setProblemResolved] = useState(false);
+  const [date, setDate] = useState(
+    editing ? editing.date.slice(0, 10) : today,
+  );
+  const [type, setType] = useState<VisitType>(editing?.type ?? 'Producao');
+  const [culture, setCulture] = useState(editing?.culture ?? family?.cultures[0] ?? '');
+  const [quantity, setQuantity] = useState(
+    editing?.quantity !== undefined ? String(editing.quantity) : '',
+  );
+  const [value, setValue] = useState(
+    editing?.value !== undefined ? String(editing.value) : '',
+  );
+  const [notes, setNotes] = useState(editing?.notes ?? '');
+  const [problemDescription, setProblemDescription] = useState(
+    editing?.problemDescription ?? '',
+  );
+  const [problemResolved, setProblemResolved] = useState(
+    editing?.problemResolved ?? false,
+  );
 
   function handleSave() {
     if (!culture.trim() || !notes.trim()) {
@@ -40,7 +52,7 @@ export function VisitFormScreen({ navigation, route }: Props) {
       return;
     }
 
-    const visit = addVisit({
+    const payload = {
       familyId,
       date: new Date(date).toISOString(),
       type,
@@ -50,8 +62,22 @@ export function VisitFormScreen({ navigation, route }: Props) {
       notes: notes.trim(),
       problemDescription: type === 'Problema' ? problemDescription.trim() : undefined,
       problemResolved: type === 'Problema' ? problemResolved : undefined,
-    });
+    };
 
+    if (isEditMode && visitId) {
+      const ok = updateVisit(visitId, payload);
+      if (!ok) {
+        Alert.alert(
+          'Edicao nao permitida',
+          'A visita nao pode mais ser editada (mais de 30 dias ou ja excluida).',
+        );
+        return;
+      }
+      navigation.replace('FamilyProfile', { familyId });
+      return;
+    }
+
+    const visit = addVisit(payload);
     if (!visit) {
       Alert.alert('Erro', 'Nao foi possivel salvar a visita.');
       return;
@@ -67,9 +93,13 @@ export function VisitFormScreen({ navigation, route }: Props) {
           <Text style={styles.backLabel}>Voltar</Text>
         </Pressable>
 
-        <Text style={styles.title}>Nova visita</Text>
+        <Text style={styles.title}>{isEditMode ? 'Editar visita' : 'Nova visita'}</Text>
         <Text style={styles.subtitle}>
-          {family ? `Registrando visita para ${family.name}` : 'Registrando visita'}
+          {family
+            ? `${isEditMode ? 'Editando registro de' : 'Registrando visita para'} ${family.name}`
+            : isEditMode
+              ? 'Editando registro'
+              : 'Registrando visita'}
         </Text>
 
         <View style={styles.offlineBadge}>
@@ -158,7 +188,9 @@ export function VisitFormScreen({ navigation, route }: Props) {
           />
 
           <Pressable style={styles.primaryButton} onPress={handleSave}>
-            <Text style={styles.primaryButtonLabel}>Salvar visita</Text>
+            <Text style={styles.primaryButtonLabel}>
+              {isEditMode ? 'Salvar alteracoes' : 'Salvar visita'}
+            </Text>
           </Pressable>
         </View>
       </ScrollView>
