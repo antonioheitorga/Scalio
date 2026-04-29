@@ -1,9 +1,9 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Layout } from '../components/Layout';
 import { StatusPill } from '../components/StatusPill';
-import { useAppContext } from '../context/AppContext';
+import { isVisitWithinEditWindow, useAppContext } from '../context/AppContext';
 import { colors } from '../theme';
 import { formatCurrency, formatDate, formatQuantity } from '../utils/format';
 import type { RootStackParamList } from '../types';
@@ -12,13 +12,32 @@ type Props = NativeStackScreenProps<RootStackParamList, 'VisitDetail'>;
 
 export function VisitDetailScreen({ navigation, route }: Props) {
   const { visitId } = route.params;
-  const { getVisitById } = useAppContext();
+  const { getVisitById, deleteVisit } = useAppContext();
   const visit = getVisitById(visitId);
 
   if (!visit) {
     return (
       <Layout>
+        <Pressable onPress={() => navigation.goBack()}>
+          <Text style={styles.backLabel}>Voltar</Text>
+        </Pressable>
         <Text style={styles.missingText}>Registro nao encontrado.</Text>
+      </Layout>
+    );
+  }
+
+  if (visit.deletedAt) {
+    return (
+      <Layout>
+        <Pressable onPress={() => navigation.goBack()}>
+          <Text style={styles.backLabel}>Voltar</Text>
+        </Pressable>
+        <View style={styles.card}>
+          <Text style={styles.title}>Registro removido</Text>
+          <Text style={styles.notes}>
+            Esta visita foi excluida em {formatDate(visit.deletedAt)}.
+          </Text>
+        </View>
       </Layout>
     );
   }
@@ -26,6 +45,32 @@ export function VisitDetailScreen({ navigation, route }: Props) {
   const isProblem = visit.type === 'Problema';
   const isResolved = isProblem && visit.problemResolved === true;
   const isActiveProblem = isProblem && !visit.problemResolved;
+  const editable = isVisitWithinEditWindow(visit);
+
+  function handleDelete() {
+    Alert.alert(
+      'Excluir registro',
+      'O registro deixa de aparecer no historico, mas permanece registrado no sistema. Deseja continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: () => {
+            const ok = deleteVisit(visit!.id);
+            if (!ok) {
+              Alert.alert(
+                'Nao foi possivel excluir',
+                'A visita pode ja ter sido removida ou tem mais de 30 dias.',
+              );
+              return;
+            }
+            navigation.goBack();
+          },
+        },
+      ],
+    );
+  }
 
   return (
     <Layout>
@@ -38,6 +83,11 @@ export function VisitDetailScreen({ navigation, route }: Props) {
           <View style={styles.flex}>
             <Text style={styles.title}>{visit.type}</Text>
             <Text style={styles.date}>{formatDate(visit.date)}</Text>
+            {visit.updatedAt ? (
+              <Text style={styles.updatedAt}>
+                Editado em {formatDate(visit.updatedAt)}
+              </Text>
+            ) : null}
           </View>
           {isProblem ? (
             <StatusPill
@@ -79,6 +129,30 @@ export function VisitDetailScreen({ navigation, route }: Props) {
           <Text style={styles.primaryButtonLabel}>Marcar como resolvido</Text>
         </Pressable>
       ) : null}
+
+      {editable ? (
+        <View style={styles.actionsRow}>
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() =>
+              navigation.navigate('VisitForm', {
+                familyId: visit.familyId,
+                visitId: visit.id,
+              })
+            }
+          >
+            <Text style={styles.secondaryButtonLabel}>Editar</Text>
+          </Pressable>
+
+          <Pressable style={styles.dangerButton} onPress={handleDelete}>
+            <Text style={styles.dangerButtonLabel}>Excluir</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <Text style={styles.lockedText}>
+          Edicao bloqueada — registros com mais de 30 dias viram historico imutavel.
+        </Text>
+      )}
     </Layout>
   );
 }
@@ -111,6 +185,12 @@ const styles = StyleSheet.create({
   date: {
     color: colors.gray,
     marginTop: 4,
+  },
+  updatedAt: {
+    color: colors.gray,
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   row: {
     color: colors.text,
@@ -160,8 +240,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+  },
+  secondaryButton: {
+    flex: 1,
+    backgroundColor: colors.greenLight,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.green,
+  },
+  secondaryButtonLabel: {
+    color: colors.green,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  dangerButton: {
+    flex: 1,
+    backgroundColor: '#fbeae6',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f1c4bc',
+  },
+  dangerButtonLabel: {
+    color: colors.red,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  lockedText: {
+    marginTop: 16,
+    textAlign: 'center',
+    color: colors.gray,
+    fontSize: 13,
+    lineHeight: 18,
+  },
   missingText: {
     color: colors.text,
     fontSize: 16,
+    marginTop: 12,
   },
 });
