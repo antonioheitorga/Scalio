@@ -1,3 +1,4 @@
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
 import {
   Alert,
@@ -11,8 +12,11 @@ import {
 import { useAppContext } from '../context/AppContext';
 import { colors } from '../theme';
 import { Layout } from '../components/Layout';
+import type { RootStackParamList } from '../types';
 
-export function LoginScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
+export function LoginScreen({ navigation }: Props) {
   const { state, login } = useAppContext();
   const [pin, setPin] = useState('');
 
@@ -32,13 +36,13 @@ export function LoginScreen() {
       <View style={styles.hero}>
         <Text style={styles.logo}>SCALIO</Text>
         <Text style={styles.tagline}>
-          Registro de visitas de campo com funcionamento offline para os agronomos da Vila Jutaiteua.
+          Registro de visitas de campo com funcionamento offline para os agentes da Vila Jutaiteua.
         </Text>
       </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Entrar no aplicativo</Text>
-        <Text style={styles.cardSubtitle}>Use o PIN do agronomo para continuar.</Text>
+        <Text style={styles.cardSubtitle}>Use o PIN do agente para continuar.</Text>
 
         <TextInput
           style={styles.input}
@@ -55,16 +59,17 @@ export function LoginScreen() {
           <Text style={styles.primaryButtonLabel}>Entrar</Text>
         </Pressable>
 
+        <Pressable onPress={() => navigation.navigate('ForgotPin')} hitSlop={8}>
+          <Text style={styles.forgotLink}>Esqueci meu PIN</Text>
+        </Pressable>
+
         <View style={styles.demoBox}>
           <Text style={styles.demoTitle}>Acessos de teste</Text>
-          {state.agronomists.map((user) => (
+          {state.agents.map((user) => (
             <Text key={user.id} style={styles.demoItem}>
               {user.name} · PIN {user.pin}
             </Text>
           ))}
-          <Text style={styles.recovery}>
-            Recuperacao MVP: reset manual pelo time fora do app.
-          </Text>
         </View>
       </View>
     </Layout>
@@ -139,9 +144,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text,
   },
-  recovery: {
-    marginTop: 8,
-    fontSize: 12,
-    color: colors.gray,
+  forgotLink: {
+    marginTop: 6,
+    color: colors.green,
+    fontWeight: '600',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

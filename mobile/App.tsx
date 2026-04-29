@@ -10,7 +10,9 @@ import {
   DashboardScreen,
   FamilyListScreen,
   FamilyProfileScreen,
+  ForgotPinScreen,
   LoginScreen,
+  ResolveProblemScreen,
   VisitDetailScreen,
   VisitFormScreen,
 } from './src/screens';
@@ -40,10 +42,14 @@ function AppNavigator() {
             <Stack.Screen name="FamilyProfile" component={FamilyProfileScreen} />
             <Stack.Screen name="VisitForm" component={VisitFormScreen} />
             <Stack.Screen name="VisitDetail" component={VisitDetailScreen} />
+            <Stack.Screen name="ResolveProblem" component={ResolveProblemScreen} />
             <Stack.Screen name="Dashboard" component={DashboardScreen} />
           </>
         ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="ForgotPin" component={ForgotPinScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

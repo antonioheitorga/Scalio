@@ -37,13 +37,17 @@ type DashboardStats = {
 
 type AppContextValue = {
   state: AppState;
-  currentUser: AppState['agronomists'][number] | null;
+  currentUser: AppState['agents'][number] | null;
   isHydrated: boolean;
   isSyncing: boolean;
   login: (pin: string) => boolean;
   logout: () => void;
   addFamily: (input: AddFamilyInput) => Family | null;
   addVisit: (input: AddVisitInput) => Visit | null;
+  resolveProblem: (visitId: string, notes?: string) => boolean;
+  updateVisit: (visitId: string, fields: Partial<AddVisitInput>) => boolean;
+  deleteVisit: (visitId: string) => boolean;
+  resetPinWithRecoveryCode: (agentId: string, code: string, newPin: string) => boolean;
   getFamiliesForCurrentUser: () => FamilySummary[];
   getFamilyById: (familyId: string) => Family | undefined;
   getVisitsForFamily: (familyId: string) => Visit[];
@@ -56,12 +60,30 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 function getCurrentUserFromSession(state: AppState, session: Session | null) {
   if (!session) return null;
-  return state.agronomists.find((item) => item.id === session.agronomistId) ?? null;
+  return state.agents.find((item) => item.id === session.agentId) ?? null;
 }
 
 async function checkOnline(): Promise<boolean> {
   const net = await Network.getNetworkStateAsync();
   return Boolean(net.isConnected && net.isInternetReachable !== false);
+}
+
+// Janela de edicao/exclusao em dias. Apos esse periodo a visita
+// vira historico imutavel (HU-21).
+const EDIT_WINDOW_DAYS = 30;
+
+// Filtro DRY de visibilidade. Soft delete: visitas com deletedAt
+// existem no estado e no Firestore, mas nao aparecem em nenhuma UI
+// nem entram nas estatisticas.
+function isVisitVisible(visit: Visit): boolean {
+  return !visit.deletedAt;
+}
+
+export function isVisitWithinEditWindow(visit: Visit): boolean {
+  const visitTime = new Date(visit.date).getTime();
+  if (Number.isNaN(visitTime)) return false;
+  const ageMs = Date.now() - visitTime;
+  return ageMs <= EDIT_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -114,15 +136,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const currentUser = useMemo(() => getCurrentUserFromSession(state, state.session), [state]);
 
   // Sync bidirecional: puxa remoto, mescla com local, empurra pendentes
-  const syncForAgronomist = useCallback(async (agronomistId: string) => {
+  const syncForAgent = useCallback(async (agentId: string) => {
     if (!isFirebaseConfigured) return;
 
     setIsSyncing(true);
 
     try {
       const [remoteFamilies, remoteVisits] = await Promise.all([
-        fetchFamilies(agronomistId),
-        fetchVisits(agronomistId),
+        fetchFamilies(agentId),
+        fetchVisits(agentId),
       ]);
 
       // Mescla: itens remotos que não existem localmente são adicionados
@@ -145,9 +167,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       // Empurra dados locais para o Firestore
       const current = stateRef.current;
-      const localFamilies = current.families.filter((f) => f.agronomistId === agronomistId);
+      const localFamilies = current.families.filter((f) => f.agentId === agentId);
       const pendingVisits = current.visits.filter(
-        (v) => v.agronomistId === agronomistId && v.syncStatus === 'pending',
+        (v) => v.agentId === agentId && v.syncStatus === 'pending',
       );
 
       await Promise.all([
@@ -181,7 +203,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const online = await checkOnline();
       if (online && mounted) {
         try {
-          await syncForAgronomist(currentUser!.id);
+          await syncForAgent(currentUser!.id);
         } catch {
           // falha silenciosa — app funciona offline
         }
@@ -195,21 +217,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       clearInterval(interval);
     };
-  }, [currentUser, isHydrated, isAuthReady, syncForAgronomist]);
+  }, [currentUser, isHydrated, isAuthReady, syncForAgent]);
 
   const login = useCallback(
     (pin: string) => {
-      const user = state.agronomists.find((item) => item.pin === pin);
+      const user = state.agents.find((item) => item.pin === pin);
       if (!user) return false;
 
-      setState((prev) => ({ ...prev, session: { agronomistId: user.id } }));
+      setState((prev) => ({ ...prev, session: { agentId: user.id } }));
 
       // Sync imediato ao fazer login (se online)
       void (async () => {
         const online = await checkOnline();
         if (online) {
           try {
-            await syncForAgronomist(user.id);
+            await syncForAgent(user.id);
           } catch {
             // silencioso
           }
@@ -218,12 +240,39 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       return true;
     },
-    [state.agronomists, syncForAgronomist],
+    [state.agents, syncForAgent],
   );
 
   const logout = useCallback(() => {
     setState((prev) => ({ ...prev, session: null }));
   }, []);
+
+  // Redefine o PIN do agente quando ele apresenta o codigo de recuperacao.
+  // Idempotente: chamada repetida com mesmos parametros apenas re-aplica
+  // o PIN. Sem push para o Firestore — agentes vivem no seed local.
+  const resetPinWithRecoveryCode = useCallback(
+    (agentId: string, code: string, newPin: string) => {
+      const trimmedCode = code.trim();
+      const trimmedPin = newPin.trim();
+
+      // PIN deve ser exatamente 4 digitos numericos
+      if (!/^\d{4}$/.test(trimmedPin)) return false;
+
+      const target = stateRef.current.agents.find((a) => a.id === agentId);
+      if (!target) return false;
+      if (!target.recoveryCode || target.recoveryCode !== trimmedCode) return false;
+
+      setState((prev) => ({
+        ...prev,
+        agents: prev.agents.map((a) =>
+          a.id === agentId ? { ...a, pin: trimmedPin } : a,
+        ),
+      }));
+
+      return true;
+    },
+    [],
+  );
 
   const addFamily = useCallback(
     (input: AddFamilyInput) => {
@@ -231,7 +280,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const family: Family = {
         id: makeId('family'),
-        agronomistId: currentUser.id,
+        agentId: currentUser.id,
         name: input.name,
         cultures: input.cultures,
         areaHectares: input.areaHectares,
@@ -263,7 +312,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       const visit: Visit = {
         id: makeId('visit'),
-        agronomistId: currentUser.id,
+        agentId: currentUser.id,
         familyId: input.familyId,
         date: input.date,
         type: input.type,
@@ -301,10 +350,153 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [currentUser],
   );
 
+  const resolveProblem = useCallback(
+    (visitId: string, notes?: string) => {
+      const target = stateRef.current.visits.find((v) => v.id === visitId);
+      // Idempotente: ignora se nao existe, nao e problema, ou ja foi resolvido
+      if (!target || target.type !== 'Problema' || target.problemResolved) return false;
+
+      const trimmedNotes = notes?.trim();
+      const resolvedAt = new Date().toISOString();
+
+      // Spread condicional: campos opcionais ficam ausentes (nao undefined),
+      // o que evita erro do Firestore com `set` e undefined.
+      const updates: Partial<Visit> = {
+        problemResolved: true,
+        problemResolvedAt: resolvedAt,
+        ...(trimmedNotes ? { problemResolutionNotes: trimmedNotes } : {}),
+        syncStatus: 'pending',
+      };
+
+      setState((prev) => ({
+        ...prev,
+        visits: prev.visits.map((v) => (v.id === visitId ? { ...v, ...updates } : v)),
+      }));
+
+      void (async () => {
+        const online = await checkOnline();
+        if (!online || !isFirebaseConfigured) return;
+        try {
+          const updated: Visit = { ...target, ...updates } as Visit;
+          await pushVisits([updated]);
+          setState((prev) => ({
+            ...prev,
+            visits: prev.visits.map((v) =>
+              v.id === visitId ? { ...v, syncStatus: 'synced' } : v,
+            ),
+          }));
+        } catch {
+          // sera sincronizado no proximo ciclo
+        }
+      })();
+
+      return true;
+    },
+    [],
+  );
+
+  // Edicao de visita. Idempotente: visita inexistente, soft-deletada ou
+  // fora da janela de 30 dias retorna false sem efeito colateral.
+  // updatedBy registra o agente atual no momento da edicao.
+  const updateVisit = useCallback(
+    (visitId: string, fields: Partial<AddVisitInput>) => {
+      if (!currentUser) return false;
+      const target = stateRef.current.visits.find((v) => v.id === visitId);
+      if (!target || target.deletedAt || !isVisitWithinEditWindow(target)) return false;
+
+      // Mantem somente campos definidos para evitar 'undefined' no Firestore
+      const sanitized: Partial<Visit> = {};
+      if (fields.date !== undefined) sanitized.date = fields.date;
+      if (fields.type !== undefined) sanitized.type = fields.type;
+      if (fields.culture !== undefined) sanitized.culture = fields.culture;
+      if (fields.notes !== undefined) sanitized.notes = fields.notes;
+      if (fields.quantity !== undefined) sanitized.quantity = fields.quantity;
+      if (fields.value !== undefined) sanitized.value = fields.value;
+      if (fields.problemDescription !== undefined) {
+        sanitized.problemDescription = fields.problemDescription;
+      }
+      if (fields.problemResolved !== undefined) {
+        sanitized.problemResolved = fields.problemResolved;
+      }
+
+      const updates: Partial<Visit> = {
+        ...sanitized,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.id,
+        syncStatus: 'pending',
+      };
+
+      setState((prev) => ({
+        ...prev,
+        visits: prev.visits.map((v) => (v.id === visitId ? { ...v, ...updates } : v)),
+      }));
+
+      void (async () => {
+        const online = await checkOnline();
+        if (!online || !isFirebaseConfigured) return;
+        try {
+          const updated: Visit = { ...target, ...updates } as Visit;
+          await pushVisits([updated]);
+          setState((prev) => ({
+            ...prev,
+            visits: prev.visits.map((v) =>
+              v.id === visitId ? { ...v, syncStatus: 'synced' } : v,
+            ),
+          }));
+        } catch {
+          // sera sincronizado no proximo ciclo
+        }
+      })();
+
+      return true;
+    },
+    [currentUser],
+  );
+
+  // Soft delete: marca deletedAt e mantem o documento. Mesmas validacoes
+  // de janela de 30 dias e idempotencia. Visita some de toda UI via
+  // filtro isVisitVisible nos getters.
+  const deleteVisit = useCallback(
+    (visitId: string) => {
+      const target = stateRef.current.visits.find((v) => v.id === visitId);
+      if (!target || target.deletedAt || !isVisitWithinEditWindow(target)) return false;
+
+      const updates: Partial<Visit> = {
+        deletedAt: new Date().toISOString(),
+        syncStatus: 'pending',
+      };
+
+      setState((prev) => ({
+        ...prev,
+        visits: prev.visits.map((v) => (v.id === visitId ? { ...v, ...updates } : v)),
+      }));
+
+      void (async () => {
+        const online = await checkOnline();
+        if (!online || !isFirebaseConfigured) return;
+        try {
+          const updated: Visit = { ...target, ...updates } as Visit;
+          await pushVisits([updated]);
+          setState((prev) => ({
+            ...prev,
+            visits: prev.visits.map((v) =>
+              v.id === visitId ? { ...v, syncStatus: 'synced' } : v,
+            ),
+          }));
+        } catch {
+          // sera sincronizado no proximo ciclo
+        }
+      })();
+
+      return true;
+    },
+    [],
+  );
+
   const getVisitsForFamily = useCallback(
     (familyId: string) =>
       state.visits
-        .filter((visit) => visit.familyId === familyId)
+        .filter((visit) => visit.familyId === familyId && isVisitVisible(visit))
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [state.visits],
   );
@@ -314,6 +506,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [state.families],
   );
 
+  // getVisitById nao aplica isVisitVisible: VisitDetailScreen pode
+  // legitimamente abrir uma visita por ID. UIs que listam ja filtram
+  // via getVisitsForFamily. Ainda assim, se a visita tiver deletedAt,
+  // a tela deve renderizar como "registro removido".
   const getVisitById = useCallback(
     (visitId: string) => state.visits.find((v) => v.id === visitId),
     [state.visits],
@@ -323,7 +519,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser) return [];
 
     return state.families
-      .filter((family) => family.agronomistId === currentUser.id)
+      .filter((family) => family.agentId === currentUser.id)
       .map((family) => {
         const visits = getVisitsForFamily(family.id);
         const lastVisit = visits[0] ?? null;
@@ -371,12 +567,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const online = await checkOnline();
       if (!online) return;
       try {
-        await syncForAgronomist(currentUser.id);
+        await syncForAgent(currentUser.id);
       } catch {
         // silencioso
       }
     })();
-  }, [currentUser, syncForAgronomist]);
+  }, [currentUser, syncForAgent]);
 
   const value = useMemo<AppContextValue>(
     () => ({
@@ -388,6 +584,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       logout,
       addFamily,
       addVisit,
+      resolveProblem,
+      updateVisit,
+      deleteVisit,
+      resetPinWithRecoveryCode,
       getFamiliesForCurrentUser,
       getFamilyById,
       getVisitsForFamily,
@@ -398,6 +598,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [
       addFamily,
       addVisit,
+      resolveProblem,
+      updateVisit,
+      deleteVisit,
+      resetPinWithRecoveryCode,
       currentUser,
       getDashboardStats,
       getFamiliesForCurrentUser,

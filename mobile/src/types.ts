@@ -1,8 +1,12 @@
-export type Agronomist = {
+export type Agent = {
   id: string;
   name: string;
   pin: string;
   initials: string;
+  // Codigo de recuperacao gerado uma vez no cadastro do agente.
+  // Texto-claro e aceitavel no MVP (seed local). Endurecer em HU-16
+  // quando agentes forem persistidos no Firestore.
+  recoveryCode?: string;
 };
 
 export type VisitType =
@@ -16,7 +20,7 @@ export type SyncStatus = 'synced' | 'pending';
 
 export type Family = {
   id: string;
-  agronomistId: string;
+  agentId: string;
   name: string;
   cultures: string[];
   areaHectares: number;
@@ -26,7 +30,7 @@ export type Family = {
 export type Visit = {
   id: string;
   familyId: string;
-  agronomistId: string;
+  agentId: string;
   date: string;
   type: VisitType;
   culture: string;
@@ -35,15 +39,22 @@ export type Visit = {
   notes: string;
   problemDescription?: string;
   problemResolved?: boolean;
+  problemResolvedAt?: string;
+  problemResolutionNotes?: string;
+  // Campos de auditoria (HU-21):
+  // updatedAt: ultima edicao | updatedBy: agente que editou | deletedAt: soft delete
+  updatedAt?: string;
+  updatedBy?: string;
+  deletedAt?: string;
   syncStatus: SyncStatus;
 };
 
 export type Session = {
-  agronomistId: string;
+  agentId: string;
 };
 
 export type AppState = {
-  agronomists: Agronomist[];
+  agents: Agent[];
   families: Family[];
   visits: Visit[];
   session: Session | null;
@@ -51,11 +62,13 @@ export type AppState = {
 
 export type RootStackParamList = {
   Login: undefined;
+  ForgotPin: undefined;
   FamilyList: undefined;
   AddFamily: undefined;
   FamilyProfile: { familyId: string };
-  VisitForm: { familyId: string };
+  VisitForm: { familyId: string; visitId?: string };
   VisitDetail: { visitId: string };
+  ResolveProblem: { visitId: string };
   Dashboard: undefined;
 };
 

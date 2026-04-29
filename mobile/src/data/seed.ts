@@ -1,24 +1,26 @@
 import type { AppState } from '../types';
 
 export const initialState: AppState = {
-  agronomists: [
+  agents: [
     {
-      id: 'agronomist-joana',
+      id: 'agent-joana',
       name: 'Joana Silva',
       pin: '1234',
       initials: 'JS',
+      recoveryCode: 'JOANA-7421',
     },
     {
-      id: 'agronomist-marcos',
+      id: 'agent-marcos',
       name: 'Marcos Pereira',
       pin: '5678',
       initials: 'MP',
+      recoveryCode: 'MARCOS-3158',
     },
   ],
   families: [
     {
       id: 'family-souza',
-      agronomistId: 'agronomist-joana',
+      agentId: 'agent-joana',
       name: 'Familia Souza',
       cultures: ['Acai'],
       areaHectares: 2.5,
@@ -26,7 +28,7 @@ export const initialState: AppState = {
     },
     {
       id: 'family-costa',
-      agronomistId: 'agronomist-joana',
+      agentId: 'agent-joana',
       name: 'Familia Costa',
       cultures: ['Mandioca'],
       areaHectares: 1.8,
@@ -34,7 +36,7 @@ export const initialState: AppState = {
     },
     {
       id: 'family-pinto',
-      agronomistId: 'agronomist-marcos',
+      agentId: 'agent-marcos',
       name: 'Familia Pinto',
       cultures: ['Pimenta', 'Cacau'],
       areaHectares: 3.1,
@@ -45,7 +47,7 @@ export const initialState: AppState = {
     {
       id: 'visit-souza-1',
       familyId: 'family-souza',
-      agronomistId: 'agronomist-joana',
+      agentId: 'agent-joana',
       date: '2026-04-13T10:00:00.000Z',
       type: 'Producao',
       culture: 'Acai',
@@ -56,7 +58,7 @@ export const initialState: AppState = {
     {
       id: 'visit-souza-2',
       familyId: 'family-souza',
-      agronomistId: 'agronomist-joana',
+      agentId: 'agent-joana',
       date: '2026-04-02T10:00:00.000Z',
       type: 'OrientacaoTecnica',
       culture: 'Acai',
@@ -66,7 +68,7 @@ export const initialState: AppState = {
     {
       id: 'visit-costa-1',
       familyId: 'family-costa',
-      agronomistId: 'agronomist-joana',
+      agentId: 'agent-joana',
       date: '2026-03-20T10:00:00.000Z',
       type: 'Problema',
       culture: 'Mandioca',
@@ -78,7 +80,7 @@ export const initialState: AppState = {
     {
       id: 'visit-pinto-1',
       familyId: 'family-pinto',
-      agronomistId: 'agronomist-marcos',
+      agentId: 'agent-marcos',
       date: '2026-04-08T10:00:00.000Z',
       type: 'Venda',
       culture: 'Pimenta',

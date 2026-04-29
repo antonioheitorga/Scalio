@@ -12,18 +12,29 @@ type VisitCardProps = {
 
 export function VisitCard({ visit, onPress }: VisitCardProps) {
   const CardComponent = onPress ? Pressable : View;
+  const isProblem = visit.type === 'Problema';
+  const isResolved = isProblem && visit.problemResolved === true;
+  const isActiveProblem = isProblem && !visit.problemResolved;
 
   return (
     <CardComponent style={styles.card} onPress={onPress}>
       <View style={styles.headerRow}>
-        <View>
+        <View style={styles.flex}>
           <Text style={styles.type}>{visit.type}</Text>
           <Text style={styles.date}>{formatDate(visit.date)}</Text>
         </View>
-        <StatusPill
-          label={visit.syncStatus === 'pending' ? 'Pendente' : 'Sincronizado'}
-          tone={visit.syncStatus === 'pending' ? 'warn' : 'ok'}
-        />
+        <View style={styles.pillStack}>
+          {isProblem ? (
+            <StatusPill
+              label={isResolved ? 'Resolvido' : 'Ativo'}
+              tone={isResolved ? 'ok' : 'alert'}
+            />
+          ) : null}
+          <StatusPill
+            label={visit.syncStatus === 'pending' ? 'Pendente' : 'Sincronizado'}
+            tone={visit.syncStatus === 'pending' ? 'warn' : 'ok'}
+          />
+        </View>
       </View>
 
       <Text style={styles.detail}>Cultura: {visit.culture}</Text>
@@ -32,7 +43,9 @@ export function VisitCard({ visit, onPress }: VisitCardProps) {
       <Text style={styles.notes}>{visit.notes}</Text>
 
       {visit.problemDescription ? (
-        <Text style={styles.problem}>Problema: {visit.problemDescription}</Text>
+        <Text style={isActiveProblem ? styles.problem : styles.problemResolved}>
+          Problema: {visit.problemDescription}
+        </Text>
       ) : null}
     </CardComponent>
   );
@@ -49,7 +62,15 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: 12,
+  },
+  flex: {
+    flex: 1,
+  },
+  pillStack: {
+    alignItems: 'flex-end',
+    gap: 6,
   },
   type: {
     fontSize: 16,
@@ -74,5 +95,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: colors.red,
+  },
+  problemResolved: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.gray,
+    textDecorationLine: 'line-through',
   },
 });
