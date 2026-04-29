@@ -97,10 +97,10 @@ Ao iniciar qualquer sessão de trabalho:
 
 ## 10. Gestão dos arquivos de arquitetura (CLAUDE.md, context.md, sessao.md)
 
-Localização:
-- `CLAUDE.md` → raiz do projeto (lido automaticamente pelo Claude Code)
-- `context.md` → `.claude/projects/.../memory/context.md`
-- `sessao.md` → `.claude/projects/.../memory/sessao.md`
+Localização (todos na raiz do projeto):
+- `CLAUDE.md` → raiz do projeto
+- `context.md` → raiz do projeto
+- `sessao.md` → raiz do projeto
 
 Os 3 arquivos são documentos vivos e podem ser atualizados durante a sessão.
 
