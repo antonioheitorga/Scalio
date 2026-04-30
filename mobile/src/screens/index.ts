@@ -1,6 +1,7 @@
 export { AddFamilyScreen } from './AddFamilyScreen';
 export { DashboardScreen } from './DashboardScreen';
 export { FamilyListScreen } from './FamilyListScreen';
+export { FamiliarHomeScreen } from './FamiliarHomeScreen';
 export { FamilyProfileScreen } from './FamilyProfileScreen';
 export { ForgotPinScreen } from './ForgotPinScreen';
 export { LoginScreen } from './LoginScreen';

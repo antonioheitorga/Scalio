@@ -24,7 +24,7 @@ export function LoginScreen({ navigation }: Props) {
     const success = login(pin);
 
     if (!success) {
-      Alert.alert('Acesso nao encontrado', 'Use um dos PINs seed: 1234 ou 5678.');
+      Alert.alert('Acesso nao encontrado', 'Verifique o PIN e tente novamente.');
       return;
     }
 
@@ -65,9 +65,9 @@ export function LoginScreen({ navigation }: Props) {
 
         <View style={styles.demoBox}>
           <Text style={styles.demoTitle}>Acessos de teste</Text>
-          {state.agents.map((user) => (
+          {state.users.map((user) => (
             <Text key={user.id} style={styles.demoItem}>
-              {user.name} · PIN {user.pin}
+              [{user.role === 'agente' ? 'Agente' : 'Familiar'}] {user.name} · PIN {user.pin}
             </Text>
           ))}
         </View>
