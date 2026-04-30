@@ -1,12 +1,17 @@
-export type Agent = {
+export type UserRole = 'agente' | 'familiar';
+
+export type User = {
   id: string;
   name: string;
   pin: string;
   initials: string;
+  role: UserRole;
   // Codigo de recuperacao gerado uma vez no cadastro do agente.
   // Texto-claro e aceitavel no MVP (seed local). Endurecer em HU-16
-  // quando agentes forem persistidos no Firestore.
+  // quando usuarios forem persistidos no Firestore.
   recoveryCode?: string;
+  // Familia vinculada ao familiar (so preenchido quando role === 'familiar').
+  familyId?: string;
 };
 
 export type VisitType =
@@ -50,11 +55,11 @@ export type Visit = {
 };
 
 export type Session = {
-  agentId: string;
+  userId: string;
 };
 
 export type AppState = {
-  agents: Agent[];
+  users: User[];
   families: Family[];
   visits: Visit[];
   session: Session | null;
@@ -70,6 +75,7 @@ export type RootStackParamList = {
   VisitDetail: { visitId: string };
   ResolveProblem: { visitId: string };
   Dashboard: undefined;
+  FamiliarHome: undefined;
 };
 
 export type FamilySummary = Family & {
