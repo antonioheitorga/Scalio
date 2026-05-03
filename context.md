@@ -107,7 +107,7 @@ Tipos de visita: `Producao | Venda | Insumo | Problema | OrientacaoTecnica`
 | B | Refator | agronomista → agente | ✅ |
 | B | HU-21 | Editar/excluir visita | ✅ |
 | B | HU-22 | Recuperação de PIN | ✅ |
-| C | HU-17 | Login e perfil de Familiar | 🔜 |
+| C | HU-17 | Login e perfil de Familiar | ✅ |
 | C | HU-18 | Agente cadastra familiares | 🔜 |
 | — | HU-NEW | Recomendação agente→familiar | 🔜 |
 | — | HU-NEW | Feedback familiar | 🔜 |
