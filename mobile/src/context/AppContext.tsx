@@ -37,7 +37,7 @@ type DashboardStats = {
 
 type AppContextValue = {
   state: AppState;
-  currentUser: AppState['agents'][number] | null;
+  currentUser: AppState['users'][number] | null;
   isHydrated: boolean;
   isSyncing: boolean;
   login: (pin: string) => boolean;
@@ -47,7 +47,7 @@ type AppContextValue = {
   resolveProblem: (visitId: string, notes?: string) => boolean;
   updateVisit: (visitId: string, fields: Partial<AddVisitInput>) => boolean;
   deleteVisit: (visitId: string) => boolean;
-  resetPinWithRecoveryCode: (agentId: string, code: string, newPin: string) => boolean;
+  resetPinWithRecoveryCode: (userId: string, code: string, newPin: string) => boolean;
   getFamiliesForCurrentUser: () => FamilySummary[];
   getFamilyById: (familyId: string) => Family | undefined;
   getVisitsForFamily: (familyId: string) => Visit[];
@@ -60,7 +60,7 @@ const AppContext = createContext<AppContextValue | undefined>(undefined);
 
 function getCurrentUserFromSession(state: AppState, session: Session | null) {
   if (!session) return null;
-  return state.agents.find((item) => item.id === session.agentId) ?? null;
+  return state.users.find((item) => item.id === session.userId) ?? null;
 }
 
 async function checkOnline(): Promise<boolean> {
@@ -192,9 +192,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Auto-sync a cada 30s quando há conexão
+  // Auto-sync a cada 30s quando há conexão.
+  // Sync e exclusivo do agente — familiar nao tem dados proprios para puxar/empurrar
+  // via agentId. Quando familiar tiver escrita propria (HU-NEW), revisar.
   useEffect(() => {
-    if (!currentUser || !isHydrated || !isAuthReady || !isFirebaseConfigured) return;
+    if (!currentUser || currentUser.role !== 'agente') return;
+    if (!isHydrated || !isAuthReady || !isFirebaseConfigured) return;
 
     let mounted = true;
 
@@ -221,26 +224,28 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     (pin: string) => {
-      const user = state.agents.find((item) => item.pin === pin);
+      const user = state.users.find((item) => item.pin === pin);
       if (!user) return false;
 
-      setState((prev) => ({ ...prev, session: { agentId: user.id } }));
+      setState((prev) => ({ ...prev, session: { userId: user.id } }));
 
-      // Sync imediato ao fazer login (se online)
-      void (async () => {
-        const online = await checkOnline();
-        if (online) {
-          try {
-            await syncForAgent(user.id);
-          } catch {
-            // silencioso
+      // Sync imediato ao fazer login — apenas para agente
+      if (user.role === 'agente') {
+        void (async () => {
+          const online = await checkOnline();
+          if (online) {
+            try {
+              await syncForAgent(user.id);
+            } catch {
+              // silencioso
+            }
           }
-        }
-      })();
+        })();
+      }
 
       return true;
     },
-    [state.agents, syncForAgent],
+    [state.users, syncForAgent],
   );
 
   const logout = useCallback(() => {
@@ -249,23 +254,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // Redefine o PIN do agente quando ele apresenta o codigo de recuperacao.
   // Idempotente: chamada repetida com mesmos parametros apenas re-aplica
-  // o PIN. Sem push para o Firestore — agentes vivem no seed local.
+  // o PIN. Sem push para o Firestore — usuarios vivem no seed local.
+  // Restrito a role === 'agente': familiar nao tem recoveryCode nesta entrega.
   const resetPinWithRecoveryCode = useCallback(
-    (agentId: string, code: string, newPin: string) => {
+    (userId: string, code: string, newPin: string) => {
       const trimmedCode = code.trim();
       const trimmedPin = newPin.trim();
 
       // PIN deve ser exatamente 4 digitos numericos
       if (!/^\d{4}$/.test(trimmedPin)) return false;
 
-      const target = stateRef.current.agents.find((a) => a.id === agentId);
-      if (!target) return false;
+      const target = stateRef.current.users.find((u) => u.id === userId);
+      if (!target || target.role !== 'agente') return false;
       if (!target.recoveryCode || target.recoveryCode !== trimmedCode) return false;
 
       setState((prev) => ({
         ...prev,
-        agents: prev.agents.map((a) =>
-          a.id === agentId ? { ...a, pin: trimmedPin } : a,
+        users: prev.users.map((u) =>
+          u.id === userId ? { ...u, pin: trimmedPin } : u,
         ),
       }));
 
@@ -562,7 +568,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [getFamiliesForCurrentUser, getVisitsForFamily]);
 
   const syncPendingData = useCallback(() => {
-    if (!currentUser || !isFirebaseConfigured) return;
+    if (!currentUser || currentUser.role !== 'agente' || !isFirebaseConfigured) return;
     void (async () => {
       const online = await checkOnline();
       if (!online) return;

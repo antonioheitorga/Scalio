@@ -41,6 +41,13 @@ O fluxo atual usa código fixo no seed. Quando houver backend real:
 **Regra de 30 dias no servidor (HU-21+):**
 Hoje só validada no cliente. Quando vier multi-role (HU-16), endurecer no Firestore Rules.
 
+**Método de login (sprint futura):**
+Login atual busca apenas por PIN (`state.users.find(u => u.pin === pin)`). Dois usuarios
+com mesmo PIN colidem silenciosamente — o primeiro encontrado loga, sem aviso. Decidido
+em HU-17 manter como está para teste (10k combinações são suficientes na vila). Revisitar
+antes de escala. Recomendação na mesa: "selecionar nome + PIN" (lista no aparelho → toca
+no nome → digita PIN), que resolve a colisão sem perder offline-first nem invalidar HU-22.
+
 ---
 
 ## Próxima implementação — Sprint C
