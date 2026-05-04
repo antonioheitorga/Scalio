@@ -1,12 +1,13 @@
 import type { AppState } from '../types';
 
 export const initialState: AppState = {
-  agents: [
+  users: [
     {
       id: 'agent-joana',
       name: 'Joana Silva',
       pin: '1234',
       initials: 'JS',
+      role: 'agente',
       recoveryCode: 'JOANA-7421',
     },
     {
@@ -14,7 +15,24 @@ export const initialState: AppState = {
       name: 'Marcos Pereira',
       pin: '5678',
       initials: 'MP',
+      role: 'agente',
       recoveryCode: 'MARCOS-3158',
+    },
+    {
+      id: 'familiar-souza',
+      name: 'Antonio Souza',
+      pin: '2468',
+      initials: 'AS',
+      role: 'familiar',
+      familyId: 'family-souza',
+    },
+    {
+      id: 'familiar-pinto',
+      name: 'Maria Pinto',
+      pin: '1357',
+      initials: 'MP',
+      role: 'familiar',
+      familyId: 'family-pinto',
     },
   ],
   families: [

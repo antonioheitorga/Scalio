@@ -24,6 +24,10 @@ export function ForgotPinScreen({ navigation }: Props) {
   const [newPin, setNewPin] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Recuperacao de PIN por codigo so existe para agente nesta entrega.
+  // Familiar nao tem recoveryCode no seed (HU-22-futura).
+  const agents = state.users.filter((u) => u.role === 'agente');
+
   function handleSubmit() {
     if (submitting) return;
 
@@ -69,7 +73,7 @@ export function ForgotPinScreen({ navigation }: Props) {
         <View style={styles.formCard}>
           <Text style={styles.label}>Quem esta redefinindo?</Text>
           <View style={styles.agentList}>
-            {state.agents.map((agent) => {
+            {agents.map((agent) => {
               const isSelected = agent.id === selectedAgentId;
               return (
                 <Pressable

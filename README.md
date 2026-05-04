@@ -2,13 +2,13 @@
 
 > Conhecimento técnico que nasce da comunidade e cresce com ela.
 
-SCALIO é um aplicativo mobile **offline-first** para registro e acompanhamento técnico de famílias agricultoras na Vila Jutaiteua, Pará. Ele digitaliza o trabalho dos engenheiros agrônomos em campo — sem depender de internet — e centraliza o histórico de produção, problemas identificados e orientações técnicas de cada família acompanhada.
+SCALIO é um aplicativo mobile **offline-first** para registro e acompanhamento técnico de famílias agricultoras na Vila Jutaiteua, Pará. Ele digitaliza o trabalho dos agentes de campo — sem depender de internet — e centraliza o histórico de produção, problemas identificados e orientações técnicas de cada família acompanhada. Familiares agricultores também têm acesso ao app para consultar informações da sua família.
 
 ---
 
 ## O problema que resolve
 
-A Vila Jutaiteua tem 411 moradores e produz açaí, mandioca, pimenta e cacau. Apenas 2 técnicos de agronomia atendem toda a comunidade — e nenhum registro das visitas é mantido. Quando o técnico não está presente, o conhecimento desaparece com ele.
+A Vila Jutaiteua tem 411 moradores e produz açaí, mandioca, pimenta e cacau. Apenas 2 agentes técnicos atendem toda a comunidade — e nenhum registro das visitas é mantido. Quando o agente não está presente, o conhecimento desaparece com ele.
 
 O SCALIO muda isso: cada visita vira um registro. Cada registro vira histórico. O histórico vira dado para tomar decisões melhores.
 
@@ -16,37 +16,36 @@ O SCALIO muda isso: cada visita vira um registro. Cada registro vira histórico.
 
 ## Status atual
 
-O projeto está na **Fase 1 — Construção do MVP**.
-
-A versão beta do app já está disponível para execução, com algumas funcionalidades implementadas. Consulte a seção [O que já está implementado](#o-que-já-está-implementado) abaixo para mais detalhes.
-
----
-
-## Documentos auxiliares
-
-| Documento | Descrição |
-|---|---|
-| [Zonas de conhecimento](./docs/Scalio-zonas-de-conhecimento.md) | Zonas de conhecimento que serão implementadas |
-| [Histórias de Usuário](./docs/SCALIO-historias-de-usuario.md) | Funcionalidades com critérios de aceitação |
+O projeto está na **Fase 1 — Construção do MVP**, Sprint C em andamento.
 
 ---
 
 ## O que já está implementado
 
+**Agente de campo**
 - Login por PIN com sessão local persistente
-- Separação de dados por agrônomo (cada um vê apenas suas famílias)
+- Recuperação de PIN por código de recuperação (offline)
 - Lista de famílias com data da última visita, indicador de atenção e alerta de problema ativo
+- Busca de família por nome
 - Cadastro de nova família com salvamento offline
 - Perfil da família com resumo e registros recentes
-- Registro de visita de campo
-- Registro de problema como parte de uma visita
-- Tela de detalhe de um registro
-- Histórico completo de visitas por família
+- Registro de visita de campo (produção, venda, insumo, problema, orientação técnica)
+- Resolução de problema com notas
+- Edição e exclusão de visita (janela de 30 dias)
 - Painel com total de famílias, registros do mês, visitas atrasadas e problemas ativos
+- Separação de dados por agente (cada agente vê apenas suas famílias)
+
+**Familiar agricultor**
+- Login por PIN com sessão local persistente
+- Perfil com visualização da família vinculada (culturas, área)
+- Stack de navegação isolada (familiar não acessa área do agente)
+
+**Infraestrutura**
 - Armazenamento local com AsyncStorage (offline-first)
 - Sincronização real com Firebase Firestore
 - Autenticação anônima automática (sessão protegida)
 - Regras de segurança no Firestore validando formato dos dados
+- Migration retro-compatível (dados de versões anteriores são preservados)
 
 ---
 
@@ -54,9 +53,9 @@ A versão beta do app já está disponível para execução, com algumas funcion
 
 | Camada | Tecnologia |
 |---|---|
-| App mobile | React Native + Expo |
-| Linguagem | TypeScript |
-| Navegação | React Navigation |
+| App mobile | React Native + Expo (managed workflow) |
+| Linguagem | TypeScript estrito |
+| Navegação | React Navigation (native stack) |
 | Armazenamento local | AsyncStorage |
 | Verificação de rede | expo-network |
 | Banco de dados | Firebase Firestore |
@@ -86,14 +85,21 @@ npm run web       # versão web no browser
 
 ## Acesso para testes
 
-O app inclui dois agrônomos genericos de teste pré-cadastrados:
+O app inclui usuários de teste pré-cadastrados em `mobile/src/data/seed.ts`.
 
-| Nome | PIN |
-|---|---|
-| Joana Silva | `1234` |
-| Marcos Pereira | `5678` |
+**Agentes**
 
-Definidos em `mobile/src/data/seed.ts`.
+| Nome | PIN | Código de recuperação |
+|---|---|---|
+| Joana Silva | `1234` | `JOANA-7421` |
+| Marcos Pereira | `5678` | `MARCOS-3158` |
+
+**Familiares**
+
+| Nome | PIN | Família vinculada |
+|---|---|---|
+| Antonio Souza | `2468` | Familia Souza |
+| Maria Pinto | `1357` | Familia Pinto |
 
 ---
 
@@ -102,24 +108,26 @@ Definidos em `mobile/src/data/seed.ts`.
 ```
 scalio/
 ├── README.md
-├── docs/
-│   ├── SCALIO-historias-de-usuario.md  # O que o app precisa fazer
-│   └── SCALIO-zonas-de-conhecimento.md # Arquitetura do conhecimento
+├── CLAUDE.md          # Diretrizes de desenvolvimento
+├── context.md         # Contexto técnico do projeto
+├── sessao.md          # Log de sprints e decisões de arquitetura
+├── firestore.rules    # Regras de segurança do Firestore
 └── mobile/
-    ├── App.tsx                          # Entrada do app e navegação
-    ├── app.json
+    ├── App.tsx                     # Entrada do app e navegação por role
     └── src/
-        ├── components/                  # Componentes reutilizáveis
+        ├── components/             # Componentes reutilizáveis
+        ├── config/                 # Configuração do Firebase
         ├── context/
-        │   └── AppContext.tsx           # Estado global, login, famílias, visitas, sync
+        │   └── AppContext.tsx      # Estado global, login, famílias, visitas, sync
         ├── data/
-        │   └── seed.ts                  # Dados iniciais para teste
-        ├── hooks/
-        ├── screens/                     # Telas do app por módulo
+        │   └── seed.ts             # Dados iniciais para teste
+        ├── screens/                # Telas do app por perfil
+        ├── services/
+        │   └── syncService.ts      # Acesso ao Firestore (fetch + push)
         ├── storage/
-        │   └── appStorage.ts            # Camada de persistência (AsyncStorage)
-        ├── utils/
-        └── types.ts                     # Tipos do domínio
+        │   └── appStorage.ts       # Persistência local e migration
+        ├── utils/                  # Formatação, datas, IDs, texto
+        └── types.ts                # Tipos do domínio
 ```
 
 ---
@@ -139,19 +147,20 @@ O app foi construído para funcionar sem internet:
 
 ## Limitações atuais (a resolver)
 
-- Autenticação por PIN local — sem recuperação de acesso implementada (HU-22)
-- Regras do Firestore ainda não isolam dados por agrônomo no servidor — depende de HU-16
+- Regras do Firestore ainda não isolam dados por agente no servidor — depende de HU-16 (auth real)
+- PIN em texto claro no AsyncStorage e Firestore — aceitável no MVP, endurecer em HU-16
+- Colisão silenciosa de PIN: dois usuários com mesmo PIN — o primeiro encontrado loga sem aviso. Revisitar antes de escala (recomendação: selecionar nome + digitar PIN)
 - Sem testes automatizados
 
 ---
 
 ## Próximos passos
 
-1. HU-20 — Buscar família por nome
-2. HU-10/HU-11 — Zonas de conhecimento (Camada 2)
-3. HU-16 — Perfil de Agente Comunitário + auth real por PIN no servidor
-4. HU-22 — Recuperação de acesso (PIN esquecido)
-5. Testes com os 2 agrônomos reais da Vila Jutaiteua
+1. **HU-18** — Agente cadastra e gerencia familiares (com persistência no Firestore)
+2. **HU-NEW** — Recomendação do agente para o familiar
+3. **HU-NEW** — Feedback do familiar
+4. **HU-15** — Painel de impacto
+5. **HU-16** — Auth real vinculada ao PIN no servidor
 
 ---
 

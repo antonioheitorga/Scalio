@@ -8,6 +8,7 @@ import { AppProvider, useAppContext } from './src/context/AppContext';
 import {
   AddFamilyScreen,
   DashboardScreen,
+  FamiliarHomeScreen,
   FamilyListScreen,
   FamilyProfileScreen,
   ForgotPinScreen,
@@ -36,15 +37,19 @@ function AppNavigator() {
       <StatusBar style="light" />
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {currentUser ? (
-          <>
-            <Stack.Screen name="FamilyList" component={FamilyListScreen} />
-            <Stack.Screen name="AddFamily" component={AddFamilyScreen} />
-            <Stack.Screen name="FamilyProfile" component={FamilyProfileScreen} />
-            <Stack.Screen name="VisitForm" component={VisitFormScreen} />
-            <Stack.Screen name="VisitDetail" component={VisitDetailScreen} />
-            <Stack.Screen name="ResolveProblem" component={ResolveProblemScreen} />
-            <Stack.Screen name="Dashboard" component={DashboardScreen} />
-          </>
+          currentUser.role === 'agente' ? (
+            <>
+              <Stack.Screen name="FamilyList" component={FamilyListScreen} />
+              <Stack.Screen name="AddFamily" component={AddFamilyScreen} />
+              <Stack.Screen name="FamilyProfile" component={FamilyProfileScreen} />
+              <Stack.Screen name="VisitForm" component={VisitFormScreen} />
+              <Stack.Screen name="VisitDetail" component={VisitDetailScreen} />
+              <Stack.Screen name="ResolveProblem" component={ResolveProblemScreen} />
+              <Stack.Screen name="Dashboard" component={DashboardScreen} />
+            </>
+          ) : (
+            <Stack.Screen name="FamiliarHome" component={FamiliarHomeScreen} />
+          )
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />

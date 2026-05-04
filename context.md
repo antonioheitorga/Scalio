@@ -93,10 +93,11 @@ Tipos de visita: `Producao | Venda | Insumo | Problema | OrientacaoTecnica`
 - **Offline-first:** salvar local (AsyncStorage) sempre. Tentar Firestore depois. Falha silenciosa.
 - **Soft delete:** visitas não são deletadas — recebem `deletedAt`. Helper `isVisitVisible` filtra em todos os getters.
 - **Sync retro-compatível:** dual query Firestore (`agentId` + `agronomistId`) para docs antigos. Migration no `migrateLegacyState` do AsyncStorage.
-- **Merge seed↔AsyncStorage:** ao hidratar agentes, base é o seed (fonte da verdade estrutural), AsyncStorage sobrescreve estado mutável (PIN). Garante campos novos do seed em dados antigos.
+- **Merge seed↔AsyncStorage:** seed é a fonte da verdade estrutural. AsyncStorage sobrescreve estado mutável por id (ex.: PIN alterado). Garante que entries novas do seed apareçam em storages antigos. Implementado em `mergeSeedWithStored` em `storage/appStorage.ts` — toda hidratação de coleção do seed usa essa função. Ao adicionar entries ao `initialState`, verificar que `migrateLegacyState` chama `mergeSeedWithStored` para essa coleção.
 - **IDs no cliente:** `makeId()` — timestamp + sufixo aleatório. Funciona offline.
 - **Janela de edição:** 30 dias (`EDIT_WINDOW_DAYS`). Só no cliente por ora. Servidor fica como TODO HU-21+.
 - **Campos opcionais no Firestore:** spread condicional — nunca `undefined` explícito.
+- **Usuários no Firestore (HU-18+):** familiares criados pelo agente vão para coleção `users` no Firestore (offline-first, mesma mecânica de families/visits). PIN em texto claro — aceitável no MVP, endurecer em HU-16. Agentes continuam só no seed local até HU-16.
 
 ## Roadmap
 
@@ -107,7 +108,7 @@ Tipos de visita: `Producao | Venda | Insumo | Problema | OrientacaoTecnica`
 | B | Refator | agronomista → agente | ✅ |
 | B | HU-21 | Editar/excluir visita | ✅ |
 | B | HU-22 | Recuperação de PIN | ✅ |
-| C | HU-17 | Login e perfil de Familiar | 🔜 |
+| C | HU-17 | Login e perfil de Familiar | ✅ |
 | C | HU-18 | Agente cadastra familiares | 🔜 |
 | — | HU-NEW | Recomendação agente→familiar | 🔜 |
 | — | HU-NEW | Feedback familiar | 🔜 |
