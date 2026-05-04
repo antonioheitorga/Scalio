@@ -1,33 +1,31 @@
 # Sessão — SCALIO
 
-## Última sessão (Abril/2026) — Sprint B ✅ Concluída
+## Última sessão (Maio/2026) — Sprint C, HU-17 ✅ Concluída
 
 ### O que foi entregue
 
-**Refator `agronomista → agente`** — mergeado em develop
-Unificação do conceito. `Agronomist→Agent`, `agronomistId→agentId`, `agronomists→agents`
-em 7 arquivos. Migration retro-compatível no AsyncStorage. Dual query no Firestore para
-docs antigos. `firestore.rules` atualizado.
+**HU-17 — Login e perfil de Familiar** — branch `feature/HU-17-familiar-login` no GitHub, PR aberto para `develop`
 
-**HU-22 — Recuperação de PIN** — mergeado em develop
-Fluxo "Esqueci meu PIN" offline via código de recuperação. `ForgotPinScreen`,
-`resetPinWithRecoveryCode`, link no `LoginScreen`. Fix: comparação case-insensitive +
-merge `{ ...seed, ...stored }` para garantir `recoveryCode` em agentes antigos do AsyncStorage.
-Códigos do seed: `JOANA7421`, `MARCOS3158`.
+Decisão estrutural tomada antes de codar: tipo único `User` com `role: 'agente' | 'familiar'`
+(Opção A) em vez de tipos separados. Afeta toda Sprint C em diante.
 
-**HU-21 — Editar e excluir visita** — mergeado em develop
-Soft delete via `deletedAt`. Log de edição (`updatedAt`, `updatedBy`). Janela de 30 dias.
-Helper `isVisitVisible` DRY em todos os getters. `VisitFormScreen` reaproveitado em modo
-edição. Botões Editar/Excluir no `VisitDetailScreen`. `firestore.rules` atualizado.
-
-**Arquitetura de docs** — simplificada
-`CLAUDE.md` (raiz), `context.md` e `sessao.md` substituem os 4 arquivos antigos da pasta `docs/`.
+Arquivos alterados:
+- `types.ts` — `Agent → User`, `role`, `familyId?`, `Session.userId`, `AppState.users`, rota `FamiliarHome`
+- `seed.ts` — agentes com `role: 'agente'`, dois familiares de teste (Antonio Souza PIN 2468, Maria Pinto PIN 1357)
+- `storage/appStorage.ts` — `mergeSeedWithStored` (função canônica de merge seed↔storage), migration retro-compatível agents/agronomists → users
+- `context/AppContext.tsx` — rename completo, sync e resetPin guardados para `role === 'agente'`
+- `App.tsx` — navegação bifurcada por role
+- `screens/FamiliarHomeScreen.tsx` — tela nova: família vinculada (nome, culturas, área) + Sair
+- `screens/LoginScreen.tsx` — demo box mostra todos os users com label `[Agente]`/`[Familiar]`
+- `screens/ForgotPinScreen.tsx` — picker filtrado para `role === 'agente'`
+- `context.md`, `sessao.md` — documentação atualizada
 
 ### Estado atual
 
-- Tudo mergeado em `develop` ✅
-- `develop` mergeado em `main` ✅
-- `firestore.rules` publicado no console Firebase? → **confirmar com usuário**
+- Branch `feature/HU-17-familiar-login` pushed ✅
+- PR aberto no GitHub para `develop` ✅
+- Merge em `develop` → responsabilidade do usuário
+- `firestore.rules` — não tocado (familiar não escreve nada ainda) ✅
 
 ### Débitos técnicos
 
@@ -44,44 +42,29 @@ Hoje só validada no cliente. Quando vier multi-role (HU-16), endurecer no Fires
 **Método de login (sprint futura):**
 Login atual busca apenas por PIN (`state.users.find(u => u.pin === pin)`). Dois usuarios
 com mesmo PIN colidem silenciosamente — o primeiro encontrado loga, sem aviso. Decidido
-em HU-17 manter como está para teste (10k combinações são suficientes na vila). Revisitar
-antes de escala. Recomendação na mesa: "selecionar nome + PIN" (lista no aparelho → toca
-no nome → digita PIN), que resolve a colisão sem perder offline-first nem invalidar HU-22.
+em HU-17 manter como está para teste. Revisitar antes de escala.
+Recomendação na mesa: "selecionar nome + PIN" (lista no aparelho → toca no nome → digita PIN),
+resolve a colisão sem perder offline-first nem invalidar HU-22.
 
 ---
 
-## Próxima implementação — Sprint C
+## Próxima implementação — HU-18
 
-**Tema: Familiar como segundo perfil**
+**Agente cadastra e gerencia familiares**
+
+Depende de HU-17 mergeada em `develop`.
+
+### O que será criado
+
+- Tela de cadastro de familiar pelo agente (nome, PIN, família vinculada)
+- Action `addUser` no `AppContext` (análoga a `addFamily`)
+- Listagem de familiares no `FamilyProfileScreen` — seção "Familiares desta família"
+- Seed de familiares passa a ser gerenciável via app (HU-18 é o primeiro passo)
 
 ### Decisão pendente antes de implementar
 
-Antes de escrever qualquer código, definir a estrutura de usuários:
-
-**Opção A — Tipo `User` genérico com `role`:**
-```ts
-type User = { id, name, pin, initials, role: 'agente' | 'familiar', recoveryCode? }
-```
-Mais escalável. Um único sistema de auth serve para todos os perfis futuros.
-
-**Opção B — Tipos separados `Agent` e `Familiar`:**
-Mais simples agora, mais trabalhoso quando vier HU-16 (auth server-side) e HU-18 (gerenciar usuários).
-
-**Recomendação:** Opção A. Afeta toda a estrutura das sprints seguintes — melhor resolver agora.
-Discutir com o usuário antes de iniciar.
-
-### HU-17 — Login e perfil de Familiar
-
-O que será criado:
-- Tipo `Familiar` (ou `User` com role) em `types.ts`
-- Tela de login simplificada para familiar
-- Perfil básico do familiar (nome, família vinculada)
-- Rota protegida separada da rota do agente no `App.tsx`
-- Seed com familiares de teste
-
-### HU-18 — Agente cadastra e gerencia familiares
-
-Depende de HU-17 mergeada. O que será criado:
-- Tela de cadastro de familiar pelo agente
-- Vinculação familiar↔família em `types.ts` e `AppContext`
-- Listagem de familiares no `FamilyProfileScreen`
+- **Onde ficam os familiares no Firestore?** Hoje `users` (agentes + familiares) vivem apenas
+  no seed local/AsyncStorage. Na HU-18 o agente cria familiares — eles precisam persistir?
+  - Opção A: continua só local (AsyncStorage). Simples, mas familiar só existe no aparelho do agente.
+  - Opção B: nova coleção `users` no Firestore. Familiar persiste na nuvem, acessível de qualquer aparelho.
+  - **Discutir com o usuário antes de iniciar.**
