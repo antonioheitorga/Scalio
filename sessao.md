@@ -22,9 +22,7 @@ Arquivos alterados:
 
 ### Estado atual
 
-- Branch `feature/HU-17-familiar-login` pushed ✅
-- PR aberto no GitHub para `develop` ✅
-- Merge em `develop` → responsabilidade do usuário
+- Branch `feature/HU-17-familiar-login` mergeada em `develop` ✅
 - `firestore.rules` — não tocado (familiar não escreve nada ainda) ✅
 
 ### Débitos técnicos
@@ -61,10 +59,19 @@ Depende de HU-17 mergeada em `develop`.
 - Listagem de familiares no `FamilyProfileScreen` — seção "Familiares desta família"
 - Seed de familiares passa a ser gerenciável via app (HU-18 é o primeiro passo)
 
-### Decisão pendente antes de implementar
+### Decisão fechada (2026-05-03)
 
-- **Onde ficam os familiares no Firestore?** Hoje `users` (agentes + familiares) vivem apenas
-  no seed local/AsyncStorage. Na HU-18 o agente cria familiares — eles precisam persistir?
-  - Opção A: continua só local (AsyncStorage). Simples, mas familiar só existe no aparelho do agente.
-  - Opção B: nova coleção `users` no Firestore. Familiar persiste na nuvem, acessível de qualquer aparelho.
-  - **Discutir com o usuário antes de iniciar.**
+**Familiares vão para o Firestore (Opção B).**
+
+Motivação: familiar cadastrado pelo agente deve sobreviver a troca de aparelho. Opção A
+(só local) criaria migração obrigatória na HU-16 de qualquer forma — melhor pagar o custo agora.
+
+Implicações aceitas:
+- PIN em texto claro no Firestore — aceitável no MVP, mesma situação do seed local. Endurecer em HU-16 com hash/token.
+- Sem isolamento server-side por agente ainda (mesma limitação já existente em families/visits).
+- Documentar como débito em `firestore.rules` com comentário explícito.
+
+O que a HU-18 precisará criar além do planejado original:
+- `fetchUsers(agentId)` e `pushUsers(users)` em `syncService.ts`
+- Regra `match /users/{userId}` em `firestore.rules` (publicar no console após merge)
+- Sync de `users` na hidratação do `AppContext` (análogo ao que já existe para families/visits)

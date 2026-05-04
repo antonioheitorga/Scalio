@@ -97,6 +97,7 @@ Tipos de visita: `Producao | Venda | Insumo | Problema | OrientacaoTecnica`
 - **IDs no cliente:** `makeId()` — timestamp + sufixo aleatório. Funciona offline.
 - **Janela de edição:** 30 dias (`EDIT_WINDOW_DAYS`). Só no cliente por ora. Servidor fica como TODO HU-21+.
 - **Campos opcionais no Firestore:** spread condicional — nunca `undefined` explícito.
+- **Usuários no Firestore (HU-18+):** familiares criados pelo agente vão para coleção `users` no Firestore (offline-first, mesma mecânica de families/visits). PIN em texto claro — aceitável no MVP, endurecer em HU-16. Agentes continuam só no seed local até HU-16.
 
 ## Roadmap
 
